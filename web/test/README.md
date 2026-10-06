@@ -1,15 +1,28 @@
 # Tests
 
-## Unit tests
+## Tests that run anywhere
 
 ```bash
 npm test
 ```
 
-These pin down the behaviour of the PC layer (`src/dos/`): number formatting,
-`RND`, cursor rounding, line wrapping, print zones, `INPUT`, the text-file
-format and the line-drawing algorithm. Each expectation was measured by running
-small programs in Microsoft QuickBASIC 4.0 under DOSBox.
+This runs two kinds of test, both in CI.
+
+**Unit tests** (`dos.test.ts`) pin down the behaviour of the PC layer
+(`src/dos/`): number formatting, `RND`, cursor rounding, line wrapping, print
+zones, `INPUT`, the text-file format and the line-drawing algorithm. Each
+expectation was measured by running small programs in Microsoft QuickBASIC 4.0
+under DOSBox.
+
+**Playthroughs** (`playthrough.test.ts`) play whole games headless with the
+random numbers fixed: new games for a fighter and a magic user, magic and
+potions from a save, level 4 into the fight with Beldan, Beldan on his own, and
+restoring with no saves. They answer whatever the game asks, and fingerprint
+every screen it stops on (text and colours, or pixels, plus the `RND` state).
+The fingerprints are a snapshot, recorded from the version that matched the
+original in DOSBox, so any change in behaviour shows up as the first screen that
+differs. After a deliberate change, check it against DOSBox (below), then
+re-record with `npx vitest run -u`.
 
 ## Side-by-side comparison with the original
 

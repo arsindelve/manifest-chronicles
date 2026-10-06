@@ -9,7 +9,9 @@ bugs. It was checked against the original screen by screen (see
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm test         # unit tests
+npm test         # unit tests and headless playthroughs
+npm run lint     # type check, ESLint, Prettier
+npm run format   # fix formatting
 npm run build    # static site in dist/
 ```
 
@@ -53,6 +55,7 @@ but nothing is a line-for-line translation.
 | `explore.ts` | The turn loop, side panel, stairs and Commands menu |
 | `maze.ts`, `view3d.ts` | The levels and the first-person view |
 | `battle.ts` | Ambushes: the monster card, rounds, magic, fleeing, loot, levelling up |
+| `fight.ts` | What ambushes and the final battle share: the battle screen, the message line, the four ways a round can go |
 | `fieldspells.ts` | Heal, Location, Eagle Eye, Life and Teleport |
 | `items.ts` | Potions and treasure chests |
 | `records.ts` | Saving, restoring, high scores, hints, game over |
@@ -80,6 +83,9 @@ as a deliberate, commented rule rather than reproduced by accident:
   the chests have given out Excaliber.
 - **White potions dropped by monsters count twice.**
 - **After a party member dies, (A)ttack runs until the fight is over.**
+- **A capital Q in a fight ends the round early.** The original marked the end
+  of an attack by setting the key to "Q", so typing one does the same: the
+  monster doesn't cast that round.
 - **Heal can overheal:** after one rejected amount, later amounts skip the check.
 - **Level 4 reuses level 3's staircase list**, opening up a few extra squares.
 - **Health and magic turn red** below 35% and 25% for you, but the other way
