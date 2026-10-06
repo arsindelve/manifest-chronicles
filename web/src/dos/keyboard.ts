@@ -7,6 +7,7 @@ export class Keyboard {
   private buffer: string[] = [];
   private waiters: Array<() => void> = [];
   private lastYield = 0;
+  private reading = 0;
   /** Bumped when the program is restarted; stale waits then stop instead of resuming. */
   generation = 0;
 
@@ -40,10 +41,24 @@ export class Keyboard {
 
   /** Wait for any key and return it. */
   async waitKey(): Promise<string> {
-    for (;;) {
-      const k = await this.poll();
-      if (k) return k;
+    this.reading++;
+    try {
+      for (;;) {
+        const k = await this.poll();
+        if (k) return k;
+      }
+    } finally {
+      this.reading--;
     }
+  }
+
+  /**
+   * True while the program is stopped waiting for a keystroke with nothing
+   * typed ahead. Polling loops that carry on working (the title animation,
+   * text typing out) don't count. Test drivers use it to type at the right moment.
+   */
+  get waiting() {
+    return this.reading > 0 && this.buffer.length === 0 && this.waiters.length > 0;
   }
 
   /** Wait for one of the given keys (case-insensitive) and return it as typed. */

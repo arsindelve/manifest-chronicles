@@ -26,7 +26,7 @@ export async function explore(g: Game, maze: Maze) {
 
     if (maze.at(g.pos) === Cell.Exit) return endgame(g);
 
-    while (key === "") key = await g.pc.keyboard.poll();
+    if (key === "") key = await g.pc.keyboard.waitKey();
 
     if (maze.at(g.pos) === Cell.Story) {
       await tellStory(g);

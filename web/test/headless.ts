@@ -62,3 +62,28 @@ function hashPixels(pc: PC) {
   for (let i = 0; i < p.length; i += 7) h = (h * 31 + p[i]) | 0;
   return h;
 }
+
+/** Wait until the game is stopped waiting for a key (see Keyboard.waiting). */
+export async function untilWaiting(pc: PC, maxMs = 10000) {
+  const start = Date.now();
+  while (!pc.keyboard.waiting) {
+    if (Date.now() - start > maxMs) throw new Error("the game never waited for a key");
+    await tick(1);
+  }
+}
+
+/** Type each key at the moment the game asks for one. */
+export async function press(pc: PC, keys: string) {
+  for (const k of keys) {
+    await untilWaiting(pc);
+    pc.keyboard.push(k);
+  }
+}
+
+/** A short fingerprint of the screen (text and colours, or pixels) and the RND state. */
+export function fingerprint(pc: PC): string {
+  const data = pc.video.mode === 0 ? new Uint8Array(pc.video.text.buffer) : pc.video.pixels;
+  let h = 0x811c9dc5;
+  for (let i = 0; i < data.length; i++) h = Math.imul(h ^ data[i], 0x01000193);
+  return `${pc.video.mode === 0 ? "text" : "vga"} ${(h >>> 0).toString(16).padStart(8, "0")} rnd ${pc.rng.seed}`;
+}
