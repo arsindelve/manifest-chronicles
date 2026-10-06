@@ -12,6 +12,12 @@ and loot chests for better swords and armor.
 **I wrote this in high school.** The first game, *Catacombs of Despair*, came first. This
 sequel followed a few months later, and I kept coming back to it for years after that.
 
+### ▶ [Play it in your browser](https://arsindelve.github.io/manifest-chronicles/)
+
+The web version is a TypeScript rewrite that looks and plays exactly like version 2.01 did
+in 1995, down to the pixel, the random numbers and the bugs. It was checked screen by screen
+against the original running in QuickBASIC 4.0. See [web/README.md](web/README.md).
+
 ---
 
 ## Timeline
@@ -24,11 +30,11 @@ These dates come from the original files' timestamps.
 | **Jan 24, 1992** | The first maze for the sequel, `MAP.1`, is saved. |
 | **Jan 30, 1992** | The player spell list, `SPELLS.DAT`, is written. |
 | **Feb – Apr 1992** | Levels 2–4 and the story text (`MAPTEXT.3`–`.8`) are written. |
-| **Apr 16 – 22, 1992** | `ENDGAME.EXE` and `MANIFEST.EXE` are compiled. *The Manifest Chronicles* v1 is done. |
+| **Apr 16 – 22, 1992** | `ENDGAME.BAS` (the final battle) and the main game are compiled into `ENDGAME.EXE` and `MANIFEST.EXE`. *The Manifest Chronicles* v1 is done. |
 | **1994** | **Version 2.01**, as shown on the title screen. Weapons and armor are rebalanced (`WEAPONS.DAT`/`ARMOR.DAT`, Aug 16, 1994). |
-| **Jul 19, 1995** | **`M.BAS` is last saved. This is the source in this repo.** Monster spells are added, and the first bitmaps and sound effects are made for a Windows version. |
+| **Jul 19, 1995** | **`M.BAS` is last saved. This is the source in this repo.** By now it's too big for QuickBASIC 4.0's compiler, which allows 64 KB of code per module ("Program-memory overflow"), so version 2.01 only ever ran inside the QuickBASIC editor. |
 | **1995 – 1998** | A **Visual Basic remake** (*Manifest* 3.0) with real graphics, WAV sound effects and Windows forms. Its project file was last saved Oct 10, 1998. |
-| **Aug 1997** | Most of the WAV sound effects and backdrops are made. The opening story and the monster table are rewritten. |
+| **Aug 1997** | Most of the remake's WAV sound effects and backdrops are made. |
 | **Nov 10, 1999** | The last change to any file: a new bitmap for the remake's main screen. |
 
 The QuickBASIC version uses no image or sound files at all. It draws everything with `LINE` and
@@ -41,11 +47,14 @@ remake aren't in this repo.
 
 750,000 years ago, before recorded history, the world had two continents:
 **Garnloken** (in the north) and **Carrion** (in the south). The people of Garnloken were farmers,
-craftsmen and traders, ruled by a monarchy that always crowned the most popular man of the day. The Carrions were bigger, stronger and closer
-to the wild, and they understood the natural world much better.
+craftsmen and traders, ruled by a monarchy that always crowned the most popular man of the day.
+The Carrions were bigger, stronger and closer to the wild, and they understood the natural world
+much better.
 
-The Manifest Chronicles is the record of one expedition into the Catacombs of Despair.
-How it ends is up to you.
+Long ago the wizard **Beldan**, possessed by a demon of his own making, made himself ruler of
+Garnloken, until a young soldier went into the catacombs where he lived and slew him. The
+Manifest Chronicles pick up fifty years later, with that soldier's grandson, and the rumour that
+Beldan might not be dead after all.
 
 ---
 
@@ -69,6 +78,7 @@ the rolls, you can reroll as many times as you want.
 ### Controls
 
 Use the **numeric keypad** with **Num Lock on**. The game makes a point of telling you this.
+(The web version also takes the arrow keys.)
 
 | Key | Action |
 | --- | --- |
@@ -93,10 +103,12 @@ Use the **numeric keypad** with **Num Lock on**. The game makes a point of telli
 - Some squares trigger **story text**, which scrolls onto the screen in color.
 - Magic points come back slowly while you walk. An invisibility potion keeps monsters
   away for 50 steps.
+- At the bottom of level 4 waits **Beldan**: 3,500 hit points, *Satan's Blade* and *Demon Armor*.
+  He silences your magic, heals himself, and can't be run from.
 
 ### What's down there
 
-- **48 monsters**, from Giant Rats and Slimes up to Vampires, Hydras, the Chrome Dragon,
+- **48 monsters**, from Giant Rats and Slimes up to Vampires, Hydras, the Chromatic Dragon,
   a Dracolich, a Beholder and the Titan. Some of them cast their own spells
   (Blizzard, Metal Storm, Lightning, Acid Rain, Maelstrom...).
 - **15 player spells** in rising order of violence: *Distress → Ache → Agony → Misery →
@@ -104,6 +116,7 @@ Use the **numeric keypad** with **Num Lock on**. The game makes a point of telli
   Devastation → Eradication → Annihilation → Obliteration*. Mutilation is my favorite:
   *"A man with a hockey mask appears with a machete and hacks your opponent."*
   Obliteration's description is just *"All hell breaks loose."*
+- **Five spells for exploring**: Heal, Location, Eagle Eye (an overhead map), Life and Teleport.
 - **26 weapons**, from the **Paper Sword** to **Excaliber** (spelled that way), and
   **23 kinds of armor**, from the **Loin Cloth** to **Mithril**. Each one is marked for
   fighters (`f`) or magic users (`m`).
@@ -112,41 +125,44 @@ Use the **numeric keypad** with **Num Lock on**. The game makes a point of telli
 
 ---
 
-## Running it today
+## Running the original
 
-### QB64 (easiest)
+- **In a browser:** [the web version](https://arsindelve.github.io/manifest-chronicles/).
+- **In DOSBox, as it ran in 1995:** mount the repo folder in [DOSBox](https://www.dosbox-staging.org/)
+  with QuickBASIC 4.0 or 4.5, and run `QB /RUN M.BAS`. It won't compile into an `.EXE` with
+  QuickBASIC 4.0 (see the 1995 entry in the timeline), but it runs in the editor. Lower the
+  DOSBox `cycles` setting until the story text types out at a readable speed.
+- **In [QB64](https://qb64.com/):** open `M.BAS` and run it from the repo folder. The empty
+  `FOR` loops the game uses for delays will run far too fast on a modern PC.
 
-1. Install [QB64](https://qb64.com/).
-2. Clone this repo and open `M.BAS`.
-3. Run it **from the repo folder** so it can find the data files.
+---
 
-QB64 is very compatible with QuickBASIC 4.5, but code from 1995 might still need a small fix or two.
-The empty `FOR` loops the game uses for delays will run far too fast on a modern PC.
+## Bugs from the 1990s
 
-### DOSBox + QuickBASIC 4.5
+Writing the web version meant reading every line, and turned up some things nobody noticed back then:
 
-For the authentic experience, mount the repo folder in [DOSBox](https://www.dosbox.com/),
-start `QB.EXE /L` and load `M.BAS`. Lower the DOSBox `cycles` setting until the scrolling text
-moves at a readable speed.
+- **The ending was unreachable in version 2.01.** Stepping onto the exit `CHAIN`s to
+  `ENDGAME.BAS`, which receives the party's stats through `COMMON` variables, matched by
+  position. By 1995 `M.BAS`'s list had changed, so QuickBASIC stops with **"Type mismatch"**
+  before the fight begins. The web version plays the ending anyway, as the 1992 build did.
+- **The race stats are backwards.** The help says North Garkonens are the brainy ones, but the
+  code gives South Garkonens the best intelligence (`INTELPOS = 10`) and North Garkonens an even split.
+- **The screen footer moves you.** The routine that draws "Manifest Chronicles v2.01" stores the
+  cursor position in the variables that hold your position. Save from the Commands menu and your
+  save puts you inside the rock at square (1, 1).
+- **Your armor protects your companion; theirs does nothing.** Monsters subtract *your* armor from
+  the damage they do to either of you.
+- **After one of you dies, (A)ttack never stops on its own,** because the round counter is
+  left at 4 and only ever checked for equal to 4.
 
-### What's missing or mismatched
-
-- **Four data files are from the VB remake.** `MONSTERS.DAT`, `MAPTEXT.1`, `MAPTEXT.2` and
-  `maptext.0` were rewritten in August 1997 for the Visual Basic version: one character per line,
-  and the monster table has two extra stat columns. `M.BAS` expects the 1992 format,
-  so those files need to be swapped for the originals before the QuickBASIC version will run cleanly.
-- **`HELP.1`–`HELP.7`** are the topics in the in-game Hints menu (`H`). They aren't in this
-  archive, so opening a hint topic will fail.
-- **`ENDGAME`**: reaching the final square `CHAIN`s to a separate `ENDGAME` program
-  that plays the ending. Only a compiled 1992 `ENDGAME.EXE` survives, and its source is lost.
-- `HIGH.DAT` **must exist with ten entries**, because the game reads it without any error
-  handling. It ships here reset to ten `Empty` slots.
+The [web version's README](web/README.md#kept-on-purpose) lists every quirk, all kept as they were.
 
 ---
 
 ## Under the hood
 
-The whole game is one file, `M.BAS`, with about 4,300 lines, 38 `SUB`s and more than 60 global variables.
+The whole game is one file, `M.BAS`, with about 4,300 lines, 38 `SUB`s and more than 60 global
+variables, plus `ENDGAME.BAS` (1,160 lines) for the final battle.
 
 **Main loop:** read a key, move or turn, roll for an ambush or a chest, regenerate MP,
 redraw the corridor, repeat. The structure is plain 1990s QuickBASIC: `SCREEN 12`
@@ -158,21 +174,22 @@ walks forward from the player until it hits a wall. For each square, it blacks o
 rectangles for any side passage that's open. The vanishing-point lines are drawn last.
 There's no math, just lookup tables.
 
+**Randomness:** the game never calls `RANDOMIZE`, so QuickBASIC's random numbers start from the
+same seed every time. What made each game different was the title screen, which calls `RND`
+over and over while it waits for you to press a key.
+
 **Data formats:** everything is plain text read with `INPUT #`, one field per line:
 
 | File | Format |
 | --- | --- |
 | `MAP.n` | 2,500 numbers (50×50): `0` floor, `1` wall, `2` stairs, `3` story trigger, `4` the final exit |
-| `MAPTEXT.n` | Story text. The first two characters of each line set the color, `/` stands for a comma, and a special marker pauses for a keypress. Ends with `EOD`. |
-| `MONSTERS.DAT` | Name, speed, HP, attack, XP, weapon, armor, spell. Ends with `Eod`. |
-| `SPELLS.DAT` | Name, required level, min damage, max damage, description |
-| `MONSPELL.DAT` | Monster spell name, min damage, max damage |
+| `MAPTEXT.n`, `HELP.n` | Story and hint text. The first two characters of each line set the color, `/` stands for a comma, and `Ç` pauses for a keypress. Ends with `EOD`. |
+| `MONSTERS.DAT` | Name, speed, HP, attack, XP, weapon, armor, spell level. Ends with `Eod`. |
+| `SPELLS.DAT` | Name, minimum damage, damage range, magic cost, description |
+| `MONSPELL.DAT` | Monster spell name, minimum damage, damage range |
 | `WEAPONS.DAT` / `ARMOR.DAT` | Name, rating, `f`/`m` (fighter or magic user) |
 | `HIGH.DAT` | 10 rows of `name, companion, level, xp` |
-
-**A bug from 1995:** the character-creation help says North Garkonens are the brainy ones,
-but the code swaps them. South Garkonens get the best intelligence modifier (`INTELPOS = 10`)
-and North Garkonens get an even split. Nobody noticed for 30 years.
+| `*.SAV` | A saved game: 38 values, one per line |
 
 ---
 
@@ -181,12 +198,19 @@ and North Garkonens get an even split. Nobody noticed for 30 years.
 | Path | Contents |
 | --- | --- |
 | `M.BAS` | The complete QuickBASIC source (version 2.01, last saved 1995) |
+| `ENDGAME.BAS` | The final battle against Beldan (1992) |
 | `MAP.1`–`MAP.4` | The four levels |
-| `MAPTEXT.*`, `maptext.0` | Story text |
+| `MAPTEXT.1`–`MAPTEXT.8` | Story text (`.7` and `.8` belong to the ending) |
+| `HELP.1`–`HELP.7` | The in-game hints |
 | `MONSTERS.DAT`, `MONSPELL.DAT`, `SPELLS.DAT`, `WEAPONS.DAT`, `ARMOR.DAT` | Game data |
-| `HIGH.DAT` | High-score table (reset) |
+| `HIGH.DAT` | High-score table (reset to empty slots; the game needs all ten) |
 | `DRAW.DAT` | Drawing data |
 | `AUTOEXEC.BAT`, `CONFIG.SYS` | The DOS boot setup it ran on: a Sound Blaster VIBRA16, a CD-ROM and a three-way boot menu for XMS, EMS or a "maintenance boot" |
+| `web/` | The browser version, in TypeScript |
+
+`ENDGAME.BAS`, the hint files and the 1995 versions of the data files came from the QuickBASIC
+working folder the game was written in. Other copies in the archive had been rewritten for the
+Visual Basic remake in a format `M.BAS` can't read.
 
 The original save games and high scores weren't included. Line endings are kept exactly as they
 were (`.gitattributes` turns off conversion) so every data file matches its original byte for byte.

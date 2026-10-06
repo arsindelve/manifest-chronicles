@@ -1,0 +1,31 @@
+# DOSBox Staging config for the side-by-side comparison.
+# Replace @DOS@ with a folder containing QB\ (QuickBASIC 4.0) and GAME\ (M.BAS,
+# ENDGAME.BAS and the data files). Copy to endgame.conf with "/RUN ENDGAME.BAS"
+# for the ENDGAME scenario.
+[sdl]
+fullscreen = false
+window_size = 512x384
+window_position = 40,40
+output = opengl
+[render]
+shader = nearest
+crt_color_profile = none
+color_temperature = 6500
+aspect = off
+integer_scaling = off
+image_adjustments = off
+viewport = fit
+[dosbox]
+machine = svga_s3
+memsize = 16
+[cpu]
+core = normal
+cpu_cycles = 60000
+[webserver]
+webserver_enabled = on
+webserver_port = 8086
+[autoexec]
+mount c "@DOS@"
+c:
+cd \GAME
+C:\QB\QB.EXE /RUN M.BAS

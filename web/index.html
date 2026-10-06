@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Manifest Chronicles</title>
+    <meta name="description" content="Catacombs of Despair II: The Manifest Chronicles - a 1990s DOS dungeon crawler written in QuickBASIC, running in the browser." />
+  </head>
+  <body>
+    <main>
+      <div class="monitor">
+        <canvas id="screen" width="720" height="400" aria-label="Game screen"></canvas>
+        <p id="start">Click or press any key to start</p>
+      </div>
+      <div class="keypad" aria-label="On-screen keys">
+        <button data-key="8" aria-label="Forward">8</button>
+        <button data-key="4" aria-label="Turn left">4</button>
+        <button data-key="2" aria-label="Back">2</button>
+        <button data-key="6" aria-label="Turn right">6</button>
+        <button data-key="a">A</button>
+        <button data-key="m">M</button>
+        <button data-key="d">D</button>
+        <button data-key="r">R</button>
+        <button data-key="c">C</button>
+        <button data-key="y">Y</button>
+        <button data-key="n">N</button>
+        <button data-key="enter">Enter</button>
+        <button id="type" class="wide" aria-label="Show keyboard">Keyboard</button>
+      </div>
+      <input id="typing" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-hidden="true" />
+      <p class="credit">
+        Catacombs of Despair II: The Manifest Chronicles, v2.01 (1992&ndash;1995).
+        Use the numeric keypad or arrow keys; press C for commands.
+        <a href="https://github.com/arsindelve/manifest-chronicles">Source</a>
+      </p>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
