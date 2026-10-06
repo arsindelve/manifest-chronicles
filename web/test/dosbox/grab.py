@@ -1,5 +1,5 @@
 """Capture the client area of *our* DOSBox window (by process image dosbox.exe, never the user's
-dosbox_with_debugger session) with PrintWindow, which works even when the window is covered."""
+dosbox_with_debugger session), or the one whose process id is in DOSBOX_PID, with PrintWindow, which works even when the window is covered."""
 import ctypes, os, sys
 from ctypes import wintypes
 from PIL import Image
@@ -14,7 +14,10 @@ def cb(h, _):
     if c.value == "SDL_app":
         pid = wintypes.DWORD(); u.GetWindowThreadProcessId(h, ctypes.byref(pid))
         hp = k.OpenProcess(0x1000, False, pid.value); buf = ctypes.create_unicode_buffer(512); sz = wintypes.DWORD(512)
-        if hp and k.QueryFullProcessImageNameW(hp, 0, buf, ctypes.byref(sz)) and buf.value.lower().endswith(r"\dosbox.exe"):
+        if os.environ.get("DOSBOX_PID"):
+            if pid.value == int(os.environ["DOSBOX_PID"]):
+                found.append(h)
+        elif hp and k.QueryFullProcessImageNameW(hp, 0, buf, ctypes.byref(sz)) and buf.value.lower().endswith(r"\dosbox.exe"):
             found.append(h)
     return True
 u.EnumWindows(cb, 0)

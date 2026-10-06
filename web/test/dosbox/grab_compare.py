@@ -7,7 +7,9 @@ SP = os.path.dirname(os.path.abspath(__file__))
 OUT = os.environ.get("CAPTURE_DIR", os.path.join(SP, "captures"))
 os.makedirs(OUT, exist_ok=True)
 ours_raw, name = sys.argv[1], sys.argv[2]
-subprocess.run([sys.executable, os.path.join(SP, "grab.py"), "cmp_" + name], check=True, capture_output=True)
+grab = subprocess.run([sys.executable, os.path.join(SP, "grab.py"), "cmp_" + name], capture_output=True, text=True)
+if grab.returncode:
+    sys.exit(grab.stderr or grab.stdout)
 ref = unscale(os.path.join(OUT, "cmp_" + name + ".png"))
 ours = Image.frombytes("RGB", (640, 480), open(ours_raw, "rb").read())
 ref.save(os.path.join(OUT, f"{name}_ref.png")); ours.save(os.path.join(OUT, f"{name}_ours.png"))

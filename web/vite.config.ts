@@ -1,12 +1,12 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig, type Plugin } from "vite";
-import { DATA_FILES } from "./src/datafiles";
+import { DATA_FILES } from "./src/datafiles.ts";
 
 // The game's original data files live in the repo root, next to M.BAS.
 // Serve them at /data/ in dev and copy them into dist/data/ on build,
 // byte-for-byte, so the web version reads exactly what QuickBASIC read.
-const ROOT = resolve(__dirname, "..");
+const ROOT = resolve(import.meta.dirname, "..");
 
 function gameData(): Plugin {
   return {

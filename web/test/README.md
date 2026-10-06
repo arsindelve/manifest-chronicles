@@ -24,7 +24,7 @@ compares:
 - **the random number streams**: it finds QuickBASIC's `RND` seed in DOSBox's
   memory and checks that ours matches after every step
 
-There are four scenarios:
+There are five scenarios:
 
 1. **A full game:** title screen, character creation, the opening story, 60 turns of
    walking and fighting, then the Commands menu, Hints, field spells (Eagle

@@ -25,6 +25,8 @@ cpu_cycles = 60000
 webserver_enabled = on
 webserver_port = 8086
 [autoexec]
+# Silent, but with the sound hardware still running so the timing is unchanged.
+mixer master 0 /noshow
 mount c "@DOS@"
 c:
 cd \GAME

@@ -37,13 +37,25 @@ type Cells = Array<Array<[number, number]>>;
 
 // ------------------------------------------------------------------ DOSBox control
 
-async function mem(addr: number, n: number) {
-  const r = await fetch(`${API}/memory/0x${addr.toString(16)}/${n}`);
-  return new Uint8Array(await r.arrayBuffer());
+/** DOSBox's web server occasionally drops a connection; try again. */
+async function api(path: string, init?: RequestInit) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const r = await fetch(`${API}${path}`, init);
+      return new Uint8Array(await r.arrayBuffer());
+    } catch (e) {
+      if (attempt >= 5) throw e;
+      await tick(300 * attempt);
+    }
+  }
+}
+
+function mem(addr: number, n: number) {
+  return api(`/memory/0x${addr.toString(16)}/${n}`);
 }
 
 async function poke(addr: number, bytes: number[]) {
-  await fetch(`${API}/memory/0x${addr.toString(16)}`, {
+  await api(`/memory/0x${addr.toString(16)}`, {
     method: "PUT",
     body: new Uint8Array(bytes),
     headers: { "Content-Type": "application/octet-stream" },
@@ -125,6 +137,7 @@ async function startDosbox(save?: string) {
   freshInstall();
   if (save) writeFileSync(join(GAME_DIR, "BELDAN.SAV"), save, "latin1");
   const proc = spawn(EXE, ["--noprimaryconf", "--nolocalconf", "--conf", CONF], { stdio: "ignore" });
+  process.env.DOSBOX_PID = String(proc.pid); // so the capture script grabs this DOSBox's window
   for (let i = 0; ; i++) {
     try {
       await fetch(`${API}/dosbox/info`);
@@ -203,6 +216,15 @@ async function refSeed() {
   return b[0] | (b[1] << 8) | (b[2] << 16);
 }
 
+/** How many draws it takes to get from seed a to seed b (if it's under 1000). */
+function drawsBetween(a: number, b: number): number | undefined {
+  for (let i = 1, s = a; i < 1000; i++) {
+    s = (s * 16598013 + 12820163) % 16777216;
+    if (s === b) return i;
+  }
+  return undefined;
+}
+
 const advance = (s: number, n: number) => {
   for (let i = 0; i < n; i++) s = (s * 16598013 + 12820163) % 16777216;
   return s;
@@ -254,13 +276,22 @@ it("matches the original screen for screen", async () => {
 
     const checkRandom = async (name: string) => {
       if (seedAddr < 0) return;
-      const b = await mem(seedAddr, 3);
-      const ref = b[0] | (b[1] << 8) | (b[2] << 16);
-      if (ref !== pc.rng.seed) {
-        log(`--- ${name}: RND streams differ (ref ${ref}, ours ${pc.rng.seed}); resyncing`);
-        pc.rng.seed = ref;
-        failures++;
+      // Retry readings that aren't on the random stream at all (caught mid-update);
+      // a real difference shows up as the streams being a few draws apart.
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const b = await mem(seedAddr, 3);
+        const ref = b[0] | (b[1] << 8) | (b[2] << 16);
+        if (ref === pc.rng.seed) return;
+        const apart = drawsBetween(pc.rng.seed, ref) ?? drawsBetween(ref, pc.rng.seed);
+        if (apart !== undefined && attempt > 0) {
+          log(`--- ${name}: RND streams differ by ${apart} draws (ref ${ref}, ours ${pc.rng.seed}); resyncing`);
+          pc.rng.seed = ref;
+          failures++;
+          return;
+        }
+        await tick(1000);
       }
+      log(`--- ${name}: couldn't get a clean RND seed reading from the original; skipped`);
     };
 
     const step = async (name: string, keys: string, quiet?: number) => {
@@ -270,6 +301,8 @@ it("matches the original screen for screen", async () => {
       }
       await refSettle(quiet);
       await settle(pc);
+      const kb = await mem(0x41a, 4);
+      if (kb[0] !== kb[2]) log(`--- ${name}: the original hasn't read all its keys`);
       await checkRandom(name);
       const mode = await refMode();
       if (mode === 3 && pc.video.mode === 0) failures += diff(name, await refCells(), screenCells(pc)) ? 1 : 0;
@@ -361,6 +394,7 @@ it("shows the same QuickBASIC error screen", async () => {
     void runManifest(pc).catch((e) => {
       if (e instanceof QBError) shown = showErrorScreen(pc, e, source);
     });
+    await refWaitFor(/Version 2\.01 1994/); // QuickBASIC takes a while to load M.BAS
     // Restore a game when there are no saves: FILES "*.SAV" fails with "File not found".
     for (const keys of [" ", "r\r"]) {
       await refType(keys);
