@@ -1,8 +1,10 @@
 name: Deploy to GitHub Pages
 
+# Both branches build and test; only `fixed` (the corrected game) is deployed.
+# The faithful 1995 port is the faithful-1995 tag.
 on:
   push:
-    branches: [main]
+    branches: [main, fixed]
   workflow_dispatch:
 
 permissions:
@@ -11,7 +13,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -36,6 +38,7 @@ jobs:
           path: web/dist
 
   deploy:
+    if: github.ref == 'refs/heads/fixed'
     needs: build
     runs-on: ubuntu-latest
     environment:
