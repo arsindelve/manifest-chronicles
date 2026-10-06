@@ -1,0 +1,32 @@
+[MENU]
+MENUITEM = XMS,   Extended Memory
+MENUITEM = EMS,   Expanded Memory  
+MENUITEM = LONG,  Maintenance Bootup 
+MENUDEFAULT=LONG,15
+MENUCOLOR=7,1
+
+[XMS]
+        DEVICE=C:\DOS\HIMEM.SYS
+        DEVICEHIGH=C:\DOS\ANSI.SYS
+        DEVICE=C:\DOS\EMM386.EXE NOEMS
+        devicehigh=c:\siside\sisdr.sys 
+        DEVICEHIGH=C:\DOS\DRVSPACE.SYS /MOVE
+
+[LONG]        
+        DEVICE=C:\DOS\HIMEM.SYS
+        DEVICE=C:\DOS\EMM386.EXE NOEMS
+        DEVICEHIGH=C:\DOS\ANSI.SYS
+        devicehigh=c:\siside\sisdr.sys 
+        DEVICEHIGH=C:\DOS\DRVSPACE.SYS /MOVE
+
+[EMS]
+        DEVICE=C:\DOS\HIMEM.SYS
+        DEVICE=C:\DOS\EMM386.EXE RAM AUTO
+        devicehigh=c:\siside\sisdr.sys 
+        DEVICEHIGH=C:\DOS\DRVSPACE.SYS /MOVE
+
+[COMMON]
+        BUFFERS=30
+        FILES=80
+        DOS=HIGH,UMB
+        DEVICEHIGH=C:\MTM\MTMCDAI.SYS /D:MSCD001
