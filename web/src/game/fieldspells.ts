@@ -1,6 +1,5 @@
 // Spells cast while exploring (M): Heal, Location, Eagle Eye, Life, Teleport.
 
-import { atLine } from "../dos/errors";
 import { Cell, type Maze } from "./maze";
 import { death } from "./records";
 import type { Character, Game, Point } from "./state";
@@ -71,7 +70,7 @@ export async function chooseCaster(g: Game, tab: number) {
     s.write("Use your magic? (y/n)");
     g.caster = 1;
   } else {
-    s.write("Use ", g.companion.name, "s magic? (y/n)");
+    s.write("Use ", g.companion.name, "'s magic? (y/n)");
     g.caster = 2;
   }
   const k = await g.pc.keyboard.waitFor("y", "n");
@@ -110,23 +109,19 @@ async function heal(g: Game, caster: Character) {
   if (g.fallen === "U") patient = companion;
   if (g.fallen === "C") patient = hero;
 
-  // Once an amount has passed the check, later amounts skip it - so after a
-  // rejected try, an over-large number can heal past the maximum.
-  let accepted = false;
+  // 0 (or less) heals nothing.
   let done = false;
   while (!done) {
-    let amount = await s.inputNumber("How many hit points? ");
+    const amount = await s.inputNumber("How many hit points? ");
+    if (amount <= 0) return;
     if (patient) {
       const needed = patient.hpMax - patient.hp;
       if (amount > needed) {
         if (patient === hero) s.writeln("You only need ", needed);
         else s.writeln(patient.name, " only needs ", needed);
-      } else if (amount < 0) {
-        amount = 0;
-        done = true;
-      } else accepted = true;
+        continue;
+      }
     }
-    if (!accepted) continue;
     if (amount * 10 > caster.mp) {
       s.writeln(...lacks(g, caster, "You don't have that many Magic Points.", " doesn't have that many Magic Points."));
     } else {
@@ -155,7 +150,6 @@ async function location(g: Game, caster: Character, from: Point) {
   s.writeln();
   s.color(5);
 
-  const you = caster === g.hero;
   for (;;) {
     const which = await s.inputNumber("What Spell ? ");
     if (which === 1) {
@@ -165,7 +159,6 @@ async function location(g: Game, caster: Character, from: Point) {
         if (g.soundOn) await g.clock.spellSound();
         s.writeln("You are in the ", quadrant, " Quadrant.");
         caster.mp -= 50;
-        if (you) await g.pause();
         return;
       }
       s.writeln(
@@ -182,14 +175,12 @@ async function location(g: Game, caster: Character, from: Point) {
         if (g.soundOn) await g.clock.spellSound();
         s.writeln(
           "You are ",
-          from.col - 10,
+          from.col - 11,
           " steps east and ",
-          from.row - 10,
+          from.row - 11,
           " steps south of your original location.",
         );
-        await g.pause();
         caster.mp -= 150;
-        if (!you) await g.pause();
         return;
       }
       s.writeln(
@@ -200,8 +191,6 @@ async function location(g: Game, caster: Character, from: Point) {
           " does not have enough Magic Points to cast that.",
         ),
       );
-      await g.pause();
-      if (!you) await g.pause();
     } else if (which === 0) return;
   }
 }
@@ -213,7 +202,7 @@ async function eagleEye(g: Game, maze: Maze, caster: Character, from: Point) {
   footer(g);
   s.color(13);
   s.writeln();
-  for (const line of ["0) Quit", "1) 5x5..........100 MP", "2) 10x10........250 MP", "3) 20x20........500 MP"])
+  for (const line of ["0) Quit", "1) 7x7..........100 MP", "2) 13x13........250 MP", "3) 19x19........500 MP"])
     s.writeln(line);
   s.writeln();
 
@@ -246,7 +235,7 @@ async function eagleEye(g: Game, maze: Maze, caster: Character, from: Point) {
   s.clear();
   s.color(8);
   s.at(size.top, 1);
-  const look = (row: number, col: number) => atLine(2986, () => maze.at({ row, col }));
+  const look = (row: number, col: number) => maze.peek({ row, col });
   for (let row = from.row - size.reach; row <= from.row + size.reach; row++) {
     s.tab(size.indent);
     s.write(" ");
@@ -273,11 +262,11 @@ async function life(g: Game, caster: Character) {
   footer(g);
   s.color(15);
   if (g.fallen === "") {
-    s.writeln("Neither of you are dead.");
+    s.writeln("Neither of you is dead.");
     return;
   }
-  if (!(caster.mp > 500)) {
-    s.writeln(caster === g.hero ? "You require 500 Magic Points." : "This requires 500 Magic Points");
+  if (caster.mp < 500) {
+    s.writeln(caster === g.hero ? "You require 500 Magic Points." : "This requires 500 Magic Points.");
     return;
   }
   caster.mp -= 500;
@@ -321,7 +310,7 @@ async function teleport(g: Game, maze: Maze, caster: Character) {
     s.color(4);
     s.writeln();
     s.writeln("You have teleported into solid rock and are unable to breathe.");
-    s.writeln("You pass out from lack of oxygen, then die shorlty after.");
+    s.writeln("You pass out from lack of oxygen, then die shortly after.");
     await g.pause();
     await death(g);
   }

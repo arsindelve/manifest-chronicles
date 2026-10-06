@@ -17,6 +17,9 @@ const MENU: Array<[PotionColor, string, number]> = [
 
 const ATTRIBUTE = Object.fromEntries(MENU.map(([color, , attr]) => [color, attr])) as Record<PotionColor, number>;
 
+/** The best weapon, number 26 in WEAPONS.DAT. */
+export const EXCALIBUR = 26;
+
 /** Healing potions restore this share of the missing health. */
 const HEALING: Partial<Record<PotionColor, number>> = { white: 0.15, grey: 0.25, purple: 0.5 };
 
@@ -44,8 +47,7 @@ export async function potionMenu(g: Game, rules: PotionRules = { blueMax: 450, b
   s.write("Type the colour of the potion you want to drink");
   const typed = await s.inputText();
 
-  // Only "white", "White" and "WHITE" count - not "wHITE".
-  const color = MENU.map(([c]) => c).find((c) => [c, c.toUpperCase(), c[0].toUpperCase() + c.slice(1)].includes(typed));
+  const color = MENU.map(([c]) => c).find((c) => c === typed.trim().toLowerCase());
   if (color) await drink(g, color, rules);
   else if (typed === "") s.writeln();
   else s.writeln("There is no such potion.");
@@ -63,14 +65,15 @@ async function drink(g: Game, color: PotionColor, rules: PotionRules) {
   g.potions[color]--;
   s.color(ATTRIBUTE[color]);
 
-  // Who drinks it? Asked only while both are alive - except for green, which always asks.
+  // Who drinks it? Asked only while both are alive - except for green, which always asks,
+  // and yellow, which covers you both.
   const askWho = async () => {
     s.writeln("Who? 1) You");
     s.writeln("     2) ", companion.name);
     return g.pc.keyboard.waitFor("1", "2");
   };
   let who = "";
-  if (color === "green" || g.fallen === "") who = await askWho();
+  if (color === "green" || (g.fallen === "" && color !== "yellow")) who = await askWho();
   if (color !== "green" && color !== "yellow") {
     if (g.fallen === "U") who = "2";
     if (g.fallen === "C") who = "1";
@@ -82,7 +85,7 @@ async function drink(g: Game, color: PotionColor, rules: PotionRules) {
   const heal = HEALING[color];
   if (heal !== undefined && drinker) {
     if (drinker.hp === drinker.hpMax) {
-      s.writeln(named(drinker, "You drink", "drinks"), ` the ${color} potion. Nothing happens`);
+      s.writeln(named(drinker, "You drink", "drinks"), ` the ${color} potion. Nothing happens.`);
     } else {
       drinker.hp += Math.floor(single((drinker.hpMax - drinker.hp) * single(heal)));
       if (drinker.hp > drinker.hpMax) drinker.hp = drinker.hpMax;
@@ -107,11 +110,11 @@ async function drink(g: Game, color: PotionColor, rules: PotionRules) {
       g.fallen = "";
       companion.hp = 1;
       s.writeln(companion.name, " has been restored.");
-    } else s.writeln(you ? "Nothing Happens." : "Nothing Happens");
+    } else s.writeln("Nothing happens.");
   }
 }
 
-/** After a kill, each colour has its own chance to drop (white is counted twice - an old bug). */
+/** After a kill, each colour has its own chance to drop. */
 export async function potionDrops(g: Game, monster: string) {
   const s = g.screen;
   const odds: Array<[PotionColor, number]> = [
@@ -124,24 +127,16 @@ export async function potionDrops(g: Game, monster: string) {
     ["white", 5],
   ];
   const dropped = new Set(odds.filter(([, n]) => g.rng.roll(n) === 1).map(([c]) => c));
-  // [colour, attribute, potions gained, message width used for centring - grey's is one short]
-  const shown: Array<[PotionColor, number, number, number]> = [
-    ["green", 10, 1, 23],
-    ["red", 4, 1, 21],
-    ["yellow", 14, 1, 24],
-    ["blue", 9, 1, 22],
-    ["white", 15, 2, 23],
-    ["grey", 8, 1, 21],
-    ["purple", 13, 1, 24],
-  ];
-  for (const [color, attr, count, width] of shown) {
+  const shown: PotionColor[] = ["green", "red", "yellow", "blue", "white", "grey", "purple"];
+  for (const color of shown) {
     if (!dropped.has(color)) continue;
-    s.color(attr);
-    s.at(22, 40 - (monster.length + width) / 2);
-    s.writeln("The ", monster, ` has a ${color} potion`);
+    const message = `The ${monster} has a ${color} potion`;
+    s.color(ATTRIBUTE[color]);
+    s.at(22, 40 - message.length / 2);
+    s.writeln(message);
     await g.pause();
     for (let c = 1; c <= 80; c++) s.put(22, c, " ");
-    g.potions[color] += count;
+    g.potions[color]++;
   }
 }
 
@@ -166,18 +161,10 @@ export async function openChest(g: Game) {
     ["white", 2],
   ];
   const found = new Set(odds.filter(([, n]) => g.rng.roll(n) === 1).map(([c]) => c));
-  const shown: Array<[PotionColor, number]> = [
-    ["green", 2],
-    ["red", 4],
-    ["yellow", 14],
-    ["blue", 9],
-    ["white", 15],
-    ["grey", 8],
-    ["purple", 13],
-  ];
-  for (const [color, attr] of shown) {
+  const shown: PotionColor[] = ["green", "red", "yellow", "blue", "white", "grey", "purple"];
+  for (const color of shown) {
     if (!found.has(color)) continue;
-    s.color(attr);
+    s.color(ATTRIBUTE[color]);
     s.writeln(`A ${color} potion`);
     g.potions[color]++;
   }
@@ -199,10 +186,10 @@ export async function openChest(g: Game) {
   if (weapon < 1) weapon = 1;
   if (armor < 1) armor = 1;
   if (armor > 23) while (!(armor < 23)) armor = g.rng.roll(23);
-  if (g.sharedCounter !== 1) {
-    if (weapon > 26) while (!(weapon < 26)) weapon = g.rng.roll(26);
-  } else weapon = g.rng.roll(20); // Excaliber has been found (or you're 1 step into invisibility)
-  if (weapon === 26) g.sharedCounter = 1;
+  if (!g.excaliburFound) {
+    if (weapon > EXCALIBUR) while (!(weapon < EXCALIBUR)) weapon = g.rng.roll(EXCALIBUR);
+  } else weapon = g.rng.roll(20);
+  if (weapon === EXCALIBUR) g.excaliburFound = true;
 
   const offer = async (text: string, role: string, equip: (c: Character) => void) => {
     s.color(13);
@@ -214,7 +201,7 @@ export async function openChest(g: Game) {
     w = g.data.weapons[weapon];
   await offer(`The chest contains ${a.name}. Want it? (y/n) `, a.role, (c) => (c.armor = armor));
   await offer(
-    `The chest contains ${weapon === 26 ? "" : "a "}${w.name}. Want it? (y/n)? `,
+    `The chest contains ${weapon === EXCALIBUR ? "" : "a "}${w.name}. Want it? (y/n) `,
     w.role,
     (c) => (c.weapon = weapon),
   );

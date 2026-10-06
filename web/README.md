@@ -1,10 +1,9 @@
 # The web version
 
 *Catacombs of Despair II: The Manifest Chronicles*, rewritten in TypeScript to
-run in a browser. It looks and plays exactly like version 2.01 running in
-QuickBASIC 4.0 in 1995: same screens, same colours, same random numbers, same
-bugs. It was checked against the original screen by screen (see
-[test/README.md](test/README.md)).
+run in a browser. It looks like version 2.01 running in QuickBASIC 4.0 in
+1995 (same screens, same colours, same random numbers), with its bugs fixed
+(see [Fixed in this version](#fixed-in-this-version)).
 
 ```bash
 npm install
@@ -15,8 +14,9 @@ npm run format   # fix formatting
 npm run build    # static site in dist/
 ```
 
-The game reads its original data files (maps, monsters, spells, story text)
-straight from [`original/`](../original), unchanged. The build copies them into `dist/data/`.
+The game reads its data files (maps, monsters, spells, story text) from
+[`data/`](data): copies of the 1995 files in [`original/`](../original) with
+their typos fixed. The build copies them into `dist/data/`.
 
 ## How it's put together
 
@@ -61,57 +61,87 @@ but nothing is a line-for-line translation.
 | `records.ts` | Saving, restoring, high scores, hints, game over |
 | `endgame.ts` | The final battle against Beldan (from `ENDGAME.BAS`) |
 
-## Kept on purpose
+## Fixed in this version
 
-Every quirk of the original that you can see in play is still here, written
-as a deliberate, commented rule rather than reproduced by accident:
+This is the corrected version of the game. The faithful port, which keeps
+every 1995 bug and was checked screen by screen against the original, is the
+[`faithful-1995`](https://github.com/arsindelve/manifest-chronicles/tree/faithful-1995)
+tag. What changed:
 
-- **The race stats are backwards.** The help says North Garkonens are the
-  clever ones; the dice favour South Garkonens.
-- **The footer moves you.** Drawing the "Manifest Chronicles v2.01" footer
-  stores the cursor position in the position the game saves and casts spells
-  from. Save or cast from the **Commands** menu, or in the same turn as an
-  ambush or a chest, and it uses square (1, 1). Location then says you're in
-  the North-west quadrant, Eagle Eye stops with "Subscript out of range", and the
-  save puts you inside solid rock when you restore it in play.
-- **Your first step goes nowhere.** The direction you walk is updated after
-  you move, so the first step of a game, or after a restore, goes nowhere or
-  follows the old heading.
-- **Your armour protects your companion,** never their own. Gear picked up
-  in a fight only counts from the next turn.
-- **One counter, two jobs:** it counts steps of invisibility and records that
-  the chests have given out Excaliber.
-- **White potions dropped by monsters count twice.**
-- **After a party member dies, (A)ttack runs until the fight is over.**
-- **A capital Q in a fight ends the round early.** The original marked the end
-  of an attack by setting the key to "Q", so typing one does the same: the
-  monster doesn't cast that round.
-- **Heal can overheal:** after one rejected amount, later amounts skip the check.
-- **Level 4 reuses level 3's staircase list**, opening up a few extra squares.
-- **Health and magic turn red** below 35% and 25% for you, but the other way
-  round for your companion.
-- **Against Beldan, any key that isn't a command repeats your last attack.**
-- **Some mistakes stop the game with a QuickBASIC error,** shown the way the
-  QuickBASIC 4.0 editor showed it: restoring when there are no saves, cancelling
-  a restore at the title screen, or typing -1 as a spell number.
-- **Little layout slips stay:** the grey-potion message sits one column left
-  of the others, and a line meant to clear the message row clears the row
-  below it.
+**Bugs**
 
-### The one thing that isn't kept
+- **The race stats matched the wrong races.** The race notes say North
+  Garkonens are the clever, weak ones and South Garkonens are average; the dice
+  had it the other way round. A fighter companion's magic also came from *your*
+  race instead of theirs (they're always a South Garkonen).
+- **The footer moved you.** Drawing the "Manifest Chronicles v2.01" footer
+  stored the cursor position as your position, so saving or casting from the
+  Commands menu, or after an ambush or a chest, used square (1, 1): Location
+  said North-west, Eagle Eye crashed, and restoring such a save put you in rock.
+- **Your first step went nowhere.** The direction you walk was updated after
+  the move, so the first step of a game, or after a restore, went nowhere or
+  followed the old heading.
+- **Your armour protected your companion,** never their own, in ambushes and
+  against Beldan.
+- **One counter did two jobs:** steps of invisibility and whether a chest had
+  given out Excalibur. Drinking an invisibility potion could stop chests
+  offering their best weapons.
+- **White potions dropped by monsters counted twice.**
+- **After a party member died, (A)ttack never stopped on its own**, and every
+  attack after the first ran one round fewer than the first.
+- **A capital Q in a fight** skipped the monster's turn.
+- **Healing could overheal:** after one rejected amount, later amounts weren't
+  checked.
+- **Level 4 reused level 3's staircase list**, turning a few of its squares
+  into floor.
+- **Your companion's health and magic turned red** at the wrong thresholds
+  (25% and 35%, the other way round from yours).
+- **Against Beldan, any key that wasn't a command repeated your last blow.**
+- **Monsters offered loot that was further down the list, not better.** Some
+  items are out of order (a Wizard Staff after a Silver Sword), so you were
+  offered worse gear and denied better.
+- **A monster brought to exactly 0 hit points by a spell still struck back.**
+- **Eagle Eye's sizes were mislabelled** (it shows 7x7, 13x13 and 19x19, not
+  5x5, 10x10 and 20x20), and **Location's precise reading was one step off.**
+- **Life needed 501 magic points**, while saying 500.
+- **Potion names were case-sensitive** ("wHITE" didn't work), and the
+  invisibility potion asked which of you drinks it, though it covers you both.
+- **The Potions hint topic wasn't on the Hints menu.**
+- **The maze side panel flashed up in the middle of a battle**, and was
+  missing after the fight that follows invisibility wearing off.
+- **When a monster's stats equalled yours**, its card left the rating blank.
 
-In version 2.01, stepping onto the exit of level 4 doesn't start the final
-battle. QuickBASIC stops with **"Type mismatch"**: `CHAIN` hands variables to
-`ENDGAME.BAS` by position, and by 1995 `M.BAS`'s list no longer lined up with
-it. The web version plays the ending, as the 1992 compiled build did.
+**Crashes** (each stopped the game with a QuickBASIC error)
+
+- Restoring with no saves, or typing the name of a save that doesn't exist.
+  Both now say so, and Enter on its own goes back.
+- Leaving the restore prompt blank at the title screen.
+- Save names with characters DOS doesn't allow.
+- Typing -1 as a battle spell; fractions are now rounded to a whole spell.
+- Eagle Eye, the 3D view and the stairs near the edge of the map.
+
+**Text**
+
+- Spelling and typos in the game's messages ("Decend", "sufficent",
+  "posseses", "shorlty", "Loracs magic", "23damage") and in the story,
+  hint and item text in [`data/`](data) ("possesed", "granfather",
+  "Play close attention", "Excaliber", "Ninja Assasin"). `data/` holds the
+  web version's copies of the data files, so `original/` stays exactly as it
+  was in 1995.
+- Little layout slips: the grey-potion message sat one column left of the
+  others, and two lines meant to clear part of the screen cleared the line
+  below instead (QuickBASIC moves a string that doesn't fit to the next line).
+
+As in the faithful version, stepping onto the exit of level 4 plays the
+final battle. In version 2.01 QuickBASIC stopped there with "Type mismatch".
 
 ## Not the original
 
 - **Arrow keys** stand in for the numeric keypad. On touch screens there's an
   on-screen keypad.
 - **Saves and high scores** live in your browser (`localStorage`).
-- **After a QuickBASIC error,** a key starts the game again. In 1995 you'd
-  have been left in the QuickBASIC editor.
+- **If a QuickBASIC error does happen,** it's shown the way the QuickBASIC 4.0
+  editor showed it, and a key starts the game again.
 - **Speed**: the original's delays were empty loops, so they ran as fast as
   your PC. They're timed here as if on a 486.
 

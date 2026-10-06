@@ -14,9 +14,11 @@ sequel followed a few months later, and I kept coming back to it for years after
 
 ### ▶ [Play it in your browser](https://arsindelve.github.io/manifest-chronicles/)
 
-The web version is a TypeScript rewrite that looks and plays exactly like version 2.01 did
-in 1995, down to the pixel, the random numbers and the bugs. It was checked screen by screen
-against the original running in QuickBASIC 4.0. See [web/README.md](web/README.md).
+The web version is a TypeScript rewrite that looks like version 2.01 did in 1995, down to
+the pixel and the random numbers, with the old bugs and typos fixed. See
+[web/README.md](web/README.md). The faithful port, bugs and all, which was checked screen by
+screen against the original running in QuickBASIC 4.0, is tagged
+[`faithful-1995`](https://github.com/arsindelve/manifest-chronicles/tree/faithful-1995).
 
 ---
 
@@ -117,7 +119,7 @@ Use the **numeric keypad** with **Num Lock on**. The game makes a point of telli
   *"A man with a hockey mask appears with a machete and hacks your opponent."*
   Obliteration's description is just *"All hell breaks loose."*
 - **Five spells for exploring**: Heal, Location, Eagle Eye (an overhead map), Life and Teleport.
-- **26 weapons**, from the **Paper Sword** to **Excaliber** (spelled that way), and
+- **26 weapons**, from the **Paper Sword** to **Excaliber** (spelled that way in 1995), and
   **23 kinds of armor**, from the **Loin Cloth** to **Mithril**. Each one is marked for
   fighters (`f`) or magic users (`m`).
 - **Seven colors of potion**: purple, green, white, yellow, blue, red and grey.
@@ -144,7 +146,7 @@ Writing the web version meant reading every line, and turned up some things nobo
 - **The ending was unreachable in version 2.01.** Stepping onto the exit `CHAIN`s to
   `ENDGAME.BAS`, which receives the party's stats through `COMMON` variables, matched by
   position. By 1995 `M.BAS`'s list had changed, so QuickBASIC stops with **"Type mismatch"**
-  before the fight begins. The web version plays the ending anyway, as the 1992 build did.
+  before the fight begins. The web version plays the ending, as the 1992 build did.
 - **The race stats are backwards.** The help says North Garkonens are the brainy ones, but the
   code gives South Garkonens the best intelligence (`INTELPOS = 10`) and North Garkonens an even split.
 - **The screen footer moves you.** The routine that draws "Manifest Chronicles v2.01" stores the
@@ -155,7 +157,9 @@ Writing the web version meant reading every line, and turned up some things nobo
 - **After one of you dies, (A)ttack never stops on its own,** because the round counter is
   left at 4 and only ever checked for equal to 4.
 
-The [web version's README](web/README.md#kept-on-purpose) lists every quirk, all kept as they were.
+The web version fixes all of these and more; its [README](web/README.md#fixed-in-this-version)
+lists them. The [`faithful-1995`](https://github.com/arsindelve/manifest-chronicles/tree/faithful-1995)
+tag keeps every one.
 
 ---
 

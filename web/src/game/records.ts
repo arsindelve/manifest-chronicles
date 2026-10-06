@@ -2,7 +2,7 @@
 
 import { atLine, ProgramEnded } from "../dos/errors";
 import type { Maze } from "./maze";
-import { newCharacterScreens } from "./title";
+import { EXCALIBUR } from "./items";
 import type { Game, Heading, Point } from "./state";
 import { footer, hline, typeOut, vline } from "./ui";
 
@@ -27,51 +27,49 @@ export async function saveGame(g: Game, at: Point) {
   s.writeln();
 
   s.color(15);
-  let name = "";
+  let name: string;
   for (;;) {
     name = await s.inputText();
-    if (name.length > 0 && name.length < 9) break;
-    s.writeln("The filename should be less at least one character and less than eight.");
+    if (/^[A-Za-z0-9_-]{1,8}$/.test(name)) break;
+    s.writeln("Please use one to eight letters or numbers.");
   }
 
   const { hero: h, companion: c, potions: p } = g;
-  atLine(3668, () => {
-    g.pc.writeFile(name + ".SAV", (w) => {
-      for (const v of [
-        g.heroDefense,
-        g.companionOffense,
-        g.companionDefense,
-        h.armor,
-        0,
-        h.weapon,
-        c.armor,
-        c.weapon,
-        g.heroOffense,
-      ])
-        w.line(v);
-      w.line(g.invisible ? "Yes" : "");
-      for (const v of [c.mp, g.level, g.map, 0, g.heading]) w.line(v);
-      w.line(h.name);
-      w.line(g.fallen);
-      w.line(c.name);
-      for (const v of [h.attack, h.hp, h.mp, g.xp, h.hpMax, at.row, at.col]) w.line(v);
-      w.line(h.job);
-      for (const v of [
-        c.mpMax,
-        h.mpMax,
-        c.attack,
-        c.hp,
-        c.hpMax,
-        p.purple,
-        p.green,
-        p.white,
-        p.yellow,
-        p.blue,
-        p.red,
-        p.grey,
-      ])
-        w.line(v);
-    });
+  g.pc.writeFile(name + ".SAV", (w) => {
+    for (const v of [
+      g.heroDefense,
+      g.companionOffense,
+      g.companionDefense,
+      h.armor,
+      0,
+      h.weapon,
+      c.armor,
+      c.weapon,
+      g.heroOffense,
+    ])
+      w.line(v);
+    w.line(g.invisible ? "Yes" : "");
+    for (const v of [c.mp, g.level, g.map, 0, g.heading]) w.line(v);
+    w.line(h.name);
+    w.line(g.fallen);
+    w.line(c.name);
+    for (const v of [h.attack, h.hp, h.mp, g.xp, h.hpMax, at.row, at.col]) w.line(v);
+    w.line(h.job);
+    for (const v of [
+      c.mpMax,
+      h.mpMax,
+      c.attack,
+      c.hp,
+      c.hpMax,
+      p.purple,
+      p.green,
+      p.white,
+      p.yellow,
+      p.blue,
+      p.red,
+      p.grey,
+    ])
+      w.line(v);
   });
 
   s.color(9);
@@ -79,33 +77,34 @@ export async function saveGame(g: Game, at: Point) {
   s.writeln("Finished Saving.....");
 }
 
-/**
- * Pick a save from the directory listing. With no saves at all the listing
- * itself fails with "File not found", as it did in 1995. From the title
- * screen, leaving the name blank starts a new character instead.
- */
-export async function restoreGame(g: Game, maze: Maze, fromTitle = false) {
+/** Pick a save from the directory listing. Returns whether a game was restored. */
+export async function restoreGame(g: Game, maze: Maze): Promise<boolean> {
   const s = g.screen;
   s.clear();
   s.mode(0);
   footer(g);
 
   s.color(9);
-  atLine(3524, () => {
-    g.pc.listFiles("*.SAV");
-  });
+  if (!g.pc.disk.list().some((n) => n.endsWith(".SAV"))) {
+    s.writeln("There are no saved games.");
+    await g.pause();
+    return false;
+  }
+  g.pc.listFiles("*.SAV");
   s.writeln();
   s.color(15);
   s.writeln("What savegame do you want to restore? (DO NOT ADD .SAV)");
-  let name = "";
+  s.writeln("Press Enter on its own to go back.");
+  let name: string;
   for (;;) {
     name = await s.inputText();
-    if (name.length < 9) break;
-    s.writeln("The filename must be less than 9 letters.");
+    if (name === "") return false;
+    if (/^[A-Za-z0-9_-]{1,8}$/.test(name) && g.pc.disk.exists(name + ".SAV")) break;
+    s.writeln(`There is no saved game called ${name}.`);
   }
 
-  if (name) {
-    const f = atLine(3542, () => g.pc.readFile(name + ".SAV"));
+  {
+    const f = g.pc.readFile(name + ".SAV");
     const { hero: h, companion: c, potions: p } = g;
     g.heroDefense = f.number();
     g.companionOffense = f.number();
@@ -130,7 +129,8 @@ export async function restoreGame(g: Game, maze: Maze, fromTitle = false) {
     h.mp = f.number();
     g.xp = f.number();
     h.hpMax = f.number();
-    g.anchor = { row: f.number(), col: f.number() };
+    g.pos = { row: f.number(), col: f.number() };
+    g.anchor = { ...g.pos };
     h.job = f.string() as Game["hero"]["job"];
     c.job = h.job === "A Fighter" ? "A Magic User" : "A Fighter";
     c.mpMax = f.number();
@@ -145,11 +145,13 @@ export async function restoreGame(g: Game, maze: Maze, fromTitle = false) {
     p.blue = f.number();
     p.red = f.number();
     p.grey = f.number();
-    g.jumpPending = true;
-    if (!fromTitle) maze.load(g, g.map);
   }
-
-  if (name === "" && g.hero.name === "") await newCharacterScreens(g);
+  g.invisibleSteps = 0;
+  g.storiesTold = 0;
+  g.excaliburFound = [g.hero, g.companion].some((c) => c.weapon === EXCALIBUR);
+  g.jumpPending = false;
+  maze.load(g, g.map);
+  return true;
 }
 
 // ------------------------------------------------------------------ high scores
@@ -286,9 +288,9 @@ export async function showHints(g: Game) {
   s.color(9);
   s.writeln("Press the letter of the topic you wish to view.");
   s.writeln();
-  // (P) has a topic too, though the menu doesn't list it.
   for (const [key, rest] of [
     ["F", "ighting Battles"],
+    ["P", "otions"],
     ["M", "agic "],
     ["S", "urviving the Maze"],
     ["L", "ocating the Stairs"],

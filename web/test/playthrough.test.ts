@@ -1,13 +1,13 @@
 // Whole games played headless, with the random numbers fixed. Every screen the
 // game stops on is fingerprinted, and the list is kept as a snapshot.
 //
-// The snapshots were recorded from the version that matched the original in
-// DOSBox screen for screen (see compare.dosbox.test.ts). They pin that
-// behaviour down so the code can be reworked safely, and they run in CI,
-// where DOSBox and QuickBASIC aren't available.
+// They pin the game's behaviour down so the code can be reworked safely.
+// On this branch the 1995 bugs are fixed, so the snapshots record the fixed
+// game; the faithful version (tag faithful-1995) has the snapshots that
+// matched the original in DOSBox.
 //
-// After an intended change in behaviour, rerun the DOSBox comparison, then
-// update the snapshots with `npx vitest run -u`.
+// After an intended change in behaviour, play it through, then update the
+// snapshots with `npx vitest run -u`.
 
 import { describe, expect, it } from "vitest";
 import { ProgramEnded, QBError } from "../src/dos/errors";
@@ -362,7 +362,7 @@ describe("playthroughs", { timeout: 120000 }, () => {
     expect(finish(run)).toMatchSnapshot();
   });
 
-  it("restoring with no saves stops with a QuickBASIC error", async () => {
+  it("restoring with no saves says so", async () => {
     const pc = makePC();
     const run = start(pc, () => runManifest(pc));
     while (!screenLines(pc).join("\n").includes("Version 2.01 1994")) await tick(1);

@@ -1,10 +1,8 @@
 // Ambushes: the monster card, the battle screen, and everything that can
 // happen in a round.
 
-import { QBError } from "../dos/errors";
 import { NUMBER_LEN, roundHalfEven, single } from "../dos/format";
 import type { Monster } from "./data";
-import { statusPanel } from "./explore";
 import { potionDrops, potionMenu } from "./items";
 import { death } from "./records";
 import type { Character, Game } from "./state";
@@ -24,6 +22,7 @@ export async function encounter(g: Game) {
   const { level } = g;
   s.clear();
   s.mode(0);
+  g.refreshGear();
 
   // Deeper levels bring tougher monsters: up to three per level, plus level / 1.3.
   let index = Math.floor(single(single(g.rng.next() * (level * 3)) + single(level / single(1.3))));
@@ -40,7 +39,7 @@ export async function encounter(g: Game) {
   let autoRounds = 0;
   let over = false;
   while (!over) {
-    s.put(MESSAGE_ROW, 20, " ".repeat(63));
+    clearRow(g, MESSAGE_ROW, 20, 80);
 
     if (!attacking) {
       const { monster: m } = b;
@@ -51,9 +50,7 @@ export async function encounter(g: Game) {
 
     /**
      * Set when an attack has run its course: the monster doesn't get to cast,
-     * the round ends without a pause, and "Attack finished" is shown. The
-     * original marked this by setting the key to "Q", so pressing a capital Q
-     * does the same thing - a quirk that's kept.
+     * the round ends without a pause, and "Attack finished" is shown.
      */
     let attackOver = false;
     let command = "a";
@@ -61,13 +58,11 @@ export async function encounter(g: Game) {
       if (++autoRounds === 4) {
         attacking = false;
         attackOver = true;
-        autoRounds = 1;
+        autoRounds = 0;
       }
     } else {
-      const key = await g.pc.keyboard.waitKey();
-      command = key.toLowerCase();
+      command = (await g.pc.keyboard.waitKey()).toLowerCase();
       attacking = command === "a";
-      attackOver = key === "Q";
     }
 
     let exchange: Exchange | undefined;
@@ -121,8 +116,7 @@ export async function encounter(g: Game) {
 
     if (g.hero.hp < 1 && g.fallen !== "U") {
       [attacking, attackOver] = [false, true];
-      // Leaves the round counter past 4, so the next (A)ttack never stops on its own.
-      autoRounds = 4;
+      autoRounds = 0;
       s.color(4);
       s.put(MESSAGE_ROW, 27, "Oh no! You've been killed!               ");
       await g.pause();
@@ -130,7 +124,7 @@ export async function encounter(g: Game) {
       g.fallen = "U";
     } else if (g.companion.hp < 1 && g.fallen !== "C") {
       [attacking, attackOver] = [false, true];
-      autoRounds = 4;
+      autoRounds = 0;
       s.color(4);
       say(g, MESSAGE_ROW, g.companion.name.length + 25, "Oh, no! ", g.companion.name, " has been killed!         ");
       await g.pause();
@@ -161,7 +155,7 @@ async function monsterCard(b: Battle) {
           ? "Very Poor"
           : theirs * 2 < ours
             ? "Poor"
-            : theirs < ours
+            : theirs <= ours
               ? "Good"
               : "";
   const speed = ["Very Slow", "Slow", "Fast", "Very Fast"][m.speed] ?? (m.speed > 3 ? "Extremely Fast" : "");
@@ -238,12 +232,13 @@ async function strike(b: Battle, who: Character, offense: number) {
     say(
       g,
       MESSAGE_ROW,
-      m.name.length + NUMBER_LEN + who.name.length + 15,
+      m.name.length + NUMBER_LEN + who.name.length + 23,
       who.name,
       " hits the ",
       m.name,
       " for ",
       damage,
+      " damage.",
     );
   if (g.soundOn) await g.clock.hitSound();
   b.hp -= damage;
@@ -265,10 +260,10 @@ async function monsterHitsCompanion(b: Battle) {
     return;
   }
   let damage = g.rng.below(m.attack) + b.index;
-  damage = Math.floor(damage - g.heroDefense); // your armour, not theirs
+  damage = Math.floor(damage - g.companionDefense);
   if (damage < 1) damage = 1;
   c.hp -= damage;
-  say(g, MESSAGE_ROW, c.name.length + NUMBER_LEN + 17, c.name, " has taken ", damage, "damage");
+  say(g, MESSAGE_ROW, c.name.length + NUMBER_LEN + 18, c.name, " has taken ", damage, " damage");
   if (g.soundOn) await g.clock.hitSound();
 }
 
@@ -374,14 +369,12 @@ async function battleMagic(b: Battle) {
       s.write("Use your magic? (y/n)");
       g.caster = 1;
     } else {
-      s.write("Use ", g.companion.name, "s magic? (y/n)");
+      s.write("Use ", g.companion.name, "'s magic? (y/n)");
       g.caster = 2;
     }
     const k = await g.pc.keyboard.waitFor("y", "n");
     if (k.toLowerCase() === "n") g.caster = g.caster === 2 ? 1 : 2;
-    s.put(16, 28, " ".repeat(55));
-    s.put(17, 28, " ".repeat(54));
-    for (const row of [15, 16]) clearRow(g, row, 1, 80);
+    for (const row of [15, 16, 17]) clearRow(g, row, 1, 80);
   }
 
   s.at(16, 28);
@@ -395,35 +388,30 @@ async function battleMagic(b: Battle) {
   s.writeln("What spell? (1-15)                   ");
 
   const caster = g.caster === 1 ? g.hero : g.companion;
-  // The typed number is kept as typed: 0.4 looks up spell 0 (free) but still "casts" it.
-  let chosen: number;
+  // 0 casts nothing.
   let spell: number;
   for (;;) {
     s.at(g.fallen === "U" ? 15 : 16, 47);
-    const n = await s.inputNumber();
-    if (n >= -1 && n < 16) {
-      // n can be -1 (or a fraction rounding to it): the original then reads
-      // before the start of its spell table and stops with an error.
-      const i = roundHalfEven(n);
-      if (i < 0) throw new QBError(9, g.caster === 1 ? 2052 : 2063);
-      if (spells[i].cost <= caster.mp) {
-        chosen = n;
-        spell = i;
+    const n = roundHalfEven(await s.inputNumber());
+    if (n >= 0 && n < 16) {
+      if (spells[n].cost <= caster.mp) {
+        spell = n;
         break;
       }
       if (g.caster === 1) {
-        s.put(18, 20, "You do not have sufficent Magic to cast that spell");
+        s.put(18, 20, "You do not have sufficient Magic to cast that spell");
         await g.pause();
         s.put(18, 20, " ".repeat(58));
       } else {
-        say(g, 18, caster.name.length + 49, caster.name, " does not have suffient Magic to cast that spell");
+        const text = " does not have sufficient Magic to cast that spell";
+        say(g, 18, caster.name.length + text.length, caster.name, text);
         await g.pause();
         s.put(18, 1, " ".repeat(72));
       }
     }
   }
 
-  if (chosen > 0) {
+  if (spell > 0) {
     const sp = spells[spell];
     s.put(17, 40 - sp.text.length / 2, sp.text);
     const damage = g.rng.below(sp.high) + sp.low;
@@ -432,7 +420,7 @@ async function battleMagic(b: Battle) {
     caster.mp -= sp.cost;
   }
 
-  if (b.hp > -1 && g.fallen === "") await monsterResponds(b, true);
+  if (b.hp > 0 && g.fallen === "") await monsterResponds(b, true);
 }
 
 async function lootArmor(b: Battle) {
@@ -441,11 +429,9 @@ async function lootArmor(b: Battle) {
   await offerLoot(
     g,
     item.role,
-    (c) => c.armor,
+    (c) => g.data.armor[c.armor].rating < item.rating,
     (c) => (c.armor = m.armor),
-    m.armor,
-    m.name.length + item.name.length + 27,
-    ["The ", m.name, " has ", item.name, ". Want it? (y/n)? "],
+    ["The ", m.name, " has ", item.name, ". Want it? (y/n) "],
   );
 }
 
@@ -455,34 +441,29 @@ async function lootWeapon(b: Battle) {
   await offerLoot(
     g,
     item.role,
-    (c) => c.weapon,
+    (c) => g.data.weapons[c.weapon].rating < item.rating,
     (c) => (c.weapon = m.weapon),
-    m.weapon,
-    m.name.length + item.name.length + 29,
-    ["The ", m.name, " has a ", item.name, ". Want it? (y/n)? "],
+    ["The ", m.name, " has a ", item.name, ". Want it? (y/n) "],
   );
-  statusPanel(g); // the original redraws the maze panel here, mid-battle
 }
 
 /** Offer a dropped item to whoever can use it, if it beats what they have. */
 async function offerLoot(
   g: Game,
   role: string,
-  current: (c: Character) => number,
+  isBetter: (c: Character) => boolean,
   equip: (c: Character) => void,
-  index: number,
-  width: number,
-  message: Array<string | number>,
+  message: string[],
 ) {
   g.screen.color(9);
   clearRow(g, MESSAGE_ROW, 10, 70);
   if (role !== "f" && role !== "m") return;
   const wearer = g.wearer(role);
-  if (index <= current(wearer)) return;
-  const half = Math.floor(width / 2);
+  if (!isBetter(wearer)) return;
   g.screen.color(13);
-  say(g, MESSAGE_ROW, width, ...message);
-  g.screen.at(MESSAGE_ROW, 40 + 11 + half);
+  const text = message.join("");
+  g.screen.at(MESSAGE_ROW, 40 - Math.floor(text.length / 2));
+  g.screen.write(text); // the cursor waits after the question
   const k = await g.pc.keyboard.waitFor("y", "n");
   if (k.toLowerCase() === "y") equip(wearer);
 }
@@ -499,5 +480,4 @@ async function levelUp(g: Game) {
   g.level++;
   if (g.fallen !== "U") g.hero.hp = g.hero.hpMax;
   if (g.fallen !== "C") g.companion.hp = g.companion.hpMax;
-  statusPanel(g);
 }

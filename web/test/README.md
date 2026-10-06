@@ -19,12 +19,18 @@ random numbers fixed: new games for a fighter and a magic user, magic and
 potions from a save, level 4 into the fight with Beldan, Beldan on his own, and
 restoring with no saves. They answer whatever the game asks, and fingerprint
 every screen it stops on (text and colours, or pixels, plus the `RND` state).
-The fingerprints are a snapshot, recorded from the version that matched the
-original in DOSBox, so any change in behaviour shows up as the first screen that
-differs. After a deliberate change, check it against DOSBox (below), then
-re-record with `npx vitest run -u`.
+The fingerprints are a snapshot, so any change in behaviour shows up as the first
+screen that differs. After a deliberate change, play it through, then re-record
+with `npx vitest run -u`.
+
+**Fixes** (`fixes.test.ts`) check some of the 1995 bugs fixed in this version.
 
 ## Side-by-side comparison with the original
+
+This compares the faithful version, bugs and all, so check out the
+[`faithful-1995`](https://github.com/arsindelve/manifest-chronicles/tree/faithful-1995)
+tag to run it: this branch fixes the 1995 bugs, so it no longer matches the
+original screen for screen.
 
 `compare.dosbox.test.ts` plays the original game, QuickBASIC 4.0 running
 `M.BAS` in [DOSBox Staging](https://www.dosbox-staging.org/), next to the

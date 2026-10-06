@@ -6,7 +6,7 @@
 // the screen corners to the deepest opening give the perspective. The
 // drawing order matters for the final pixels, so it follows the original.
 
-import { add, Cell, rightOf, type Maze } from "./maze";
+import { add, Cell, forward, rightOf, type Maze } from "./maze";
 import type { Game } from "./state";
 
 type Box = readonly [number, number, number, number];
@@ -44,7 +44,7 @@ const VANISH: ReadonlyArray<readonly [number, number]> = [
 export function drawCorridor(g: Game, maze: Maze) {
   const v = g.pc.video;
   const wall = maze.wallColor;
-  const ahead = g.step;
+  const ahead = forward(g.heading);
   const right = rightOf(g.heading);
   const left = { row: -right.row, col: -right.col };
 
@@ -55,15 +55,15 @@ export function drawCorridor(g: Game, maze: Maze) {
     let blocked = false;
     if (depth > 0) {
       const here = add(g.pos, ahead, depth - 1);
-      if (maze.at(here) === Cell.Wall) blocked = true;
+      if (maze.peek(here) === Cell.Wall) blocked = true;
       else {
         g.viewDepth = depth;
         v.box(...f.opening, 0);
-        if (f.right && maze.at(add(here, right)) !== Cell.Wall)
+        if (f.right && maze.peek(add(here, right)) !== Cell.Wall)
           f.right.forEach((b) => {
             v.box(...b, 0);
           });
-        if (f.left && maze.at(add(here, left)) !== Cell.Wall)
+        if (f.left && maze.peek(add(here, left)) !== Cell.Wall)
           f.left.forEach((b) => {
             v.box(...b, 0);
           });

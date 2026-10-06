@@ -22,9 +22,5 @@ export async function runManifest(pc: PC): Promise<void> {
   for (const label of ["Monsters...   ", "Weapons...     ", "Armor...        ", "Spells..."]) s.put(14, 41, label);
   s.clear();
 
-  // A restored game starts where it was saved - unless the save says (1,1),
-  // which is how the original told "nothing restored" apart.
-  if (g.anchor.row + g.anchor.col !== 2) g.pos = { ...g.anchor };
-
   await explore(g, maze);
 }

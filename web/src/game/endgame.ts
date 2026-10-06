@@ -32,18 +32,13 @@ export async function endgame(g: Game): Promise<never> {
   await typeOut(g, "MAPTEXT.7", 250);
   s.clear();
   s.color(4);
+  g.refreshGear();
 
   let hp = BELDAN.hp;
   // (A)ttack keeps fighting on its own for three rounds, then asks again.
   let attacking = false;
   let autoRounds = 0;
   let muted = false;
-  /**
-   * Who lands a blow this round. Unlike a normal battle it's only re-rolled
-   * when you attack and only cleared by Magic, Drink or Run - so the round
-   * that ends an (A)ttack run, or any other key, repeats the previous blow.
-   */
-  let exchange: Exchange | undefined;
 
   const message = (width: number, ...parts: Array<string | number>) => {
     say(g, MESSAGE_ROW, width, ...parts);
@@ -60,7 +55,7 @@ export async function endgame(g: Game): Promise<never> {
     let damage = g.rng.below(who.attack + offense - LEVEL) + LEVEL ** 2;
     if (damage < 1) damage = 1;
     if (isHero) message(NUMBER_LEN + 26, "You hit Beldan for ", damage, " damage.");
-    else message(NUMBER_LEN + who.name.length + 16, who.name, " hits Beldan for ", damage);
+    else message(NUMBER_LEN + who.name.length + 24, who.name, " hits Beldan for ", damage, " damage.");
     hp -= damage;
   };
 
@@ -76,10 +71,10 @@ export async function endgame(g: Game): Promise<never> {
       return;
     }
     let damage = g.rng.below(BELDAN.attack) + STRENGTH;
-    damage = Math.floor(damage - g.heroDefense);
+    damage = Math.floor(damage - (you ? g.heroDefense : g.companionDefense));
     if (damage < 1) damage = 1;
     if (you) message(NUMBER_LEN + 19, "You sustain ", damage, " damage");
-    else message(target.name.length + NUMBER_LEN + 17, target.name, " has taken ", damage, "damage");
+    else message(target.name.length + NUMBER_LEN + 18, target.name, " has taken ", damage, " damage");
     target.hp -= damage;
   };
 
@@ -97,7 +92,7 @@ export async function endgame(g: Game): Promise<never> {
   };
 
   for (;;) {
-    s.put(MESSAGE_ROW, 20, " ".repeat(63));
+    clearRow(g, MESSAGE_ROW, 20, 80);
     // Unlike an ambush, "Dead" here means 0 hit points or less.
     if (!attacking)
       drawBattleScreen(
@@ -107,21 +102,19 @@ export async function endgame(g: Game): Promise<never> {
       );
     showRoundHp(g, { hp, maxHp: BELDAN.hp });
 
-    // As in an ambush, an attack that has run its course (or a capital Q)
-    // ends the round with "Attack finished". Here Beldan still gets his turn.
+    // As in an ambush, an attack that has run its course ends the round with
+    // "Attack finished". Here Beldan still gets his turn.
     let attackOver = false;
     let command = "a";
     if (attacking) {
       if (++autoRounds === 4) {
         attacking = false;
         attackOver = true;
-        autoRounds = 1;
+        autoRounds = 0;
       }
     } else {
-      const key = await g.pc.keyboard.waitKey();
-      command = key.toLowerCase();
+      command = (await g.pc.keyboard.waitKey()).toLowerCase();
       attacking = command === "a";
-      attackOver = key === "Q";
     }
 
     if (!muted) {
@@ -131,19 +124,15 @@ export async function endgame(g: Game): Promise<never> {
       muted = true;
     }
 
+    let exchange: Exchange | undefined;
     if (!attackOver) {
       if (command === "a") exchange = rollExchange(g);
-      else if (command === "m") {
-        message(22, "You cannot cast Magic");
-        exchange = undefined;
-      } else if (command === "d") {
-        await potionMenu(g, { blueMax: 250, beldanSeesYou: true });
-        exchange = undefined;
-      } else if (command === "r") {
+      else if (command === "m") message(22, "You cannot cast Magic");
+      else if (command === "d") await potionMenu(g, { blueMax: 250, beldanSeesYou: true });
+      else if (command === "r") {
         s.color(14);
         message(24, "You cannot escape Beldan");
         await g.pause();
-        exchange = undefined;
       }
     }
 
@@ -169,8 +158,7 @@ export async function endgame(g: Game): Promise<never> {
 
     if (g.hero.hp < 1 && g.fallen !== "U") {
       [attacking, attackOver] = [false, true];
-      // Leaves the round counter past 4, so the next (A)ttack never stops on its own.
-      autoRounds = 4;
+      autoRounds = 0;
       s.color(4);
       s.put(MESSAGE_ROW, 27, "Oh no! You've been killed!               ");
       await g.pause();
@@ -178,7 +166,7 @@ export async function endgame(g: Game): Promise<never> {
       g.fallen = "U";
     } else if (g.companion.hp < 1 && g.fallen !== "C") {
       [attacking, attackOver] = [false, true];
-      autoRounds = 4;
+      autoRounds = 0;
       s.color(4);
       message(g.companion.name.length + 25, "Oh, no! ", g.companion.name, " has been killed!         ");
       await g.pause();

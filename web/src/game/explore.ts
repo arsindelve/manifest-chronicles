@@ -1,6 +1,5 @@
 // Walking the catacombs: the turn loop, the status panel, stairs, commands.
 
-import { atLine } from "../dos/errors";
 import { NUMBER_LEN, single } from "../dos/format";
 import { encounter } from "./battle";
 import { endgame } from "./endgame";
@@ -35,16 +34,17 @@ export async function explore(g: Game, maze: Maze) {
     }
 
     if (g.invisible) {
-      g.sharedCounter++;
-      if (g.sharedCounter === 50) {
+      g.invisibleSteps++;
+      if (g.invisibleSteps === 50) {
         g.screen.clear();
         footer(g);
         g.screen.mode(0);
         g.screen.writeln("You are no longer invisible...");
         await g.pause();
         g.invisible = false;
-        g.sharedCounter = 0;
+        g.invisibleSteps = 0;
         await encounter(g);
+        statusPanel(g);
       }
     }
 
@@ -68,10 +68,9 @@ export async function explore(g: Game, maze: Maze) {
     if (key === "4") g.heading = turnLeft(g.heading);
     if (key === "6") g.heading = turnRight(g.heading);
     if (key === "2" || key === "8") {
-      const to = add(g.pos, g.step, key === "8" ? 1 : -1);
+      const to = add(g.pos, forward(g.heading), key === "8" ? 1 : -1);
       if (maze.at(to) !== Cell.Wall) g.pos = to;
     }
-    g.step = forward(g.heading);
 
     switch (key.toUpperCase()) {
       case "M":
@@ -114,9 +113,7 @@ export async function explore(g: Game, maze: Maze) {
 
     g.refreshGear();
     g.screen.mode(12);
-    atLine(416, () => {
-      drawCorridor(g, maze);
-    });
+    drawCorridor(g, maze);
     key = "";
 
     const s = g.screen;
@@ -152,7 +149,7 @@ async function stairs(g: Game, maze: Maze) {
   s.clear();
   s.mode(0);
   s.color(9);
-  s.writeln("There are a set of stairs leading down. Decend? (y/n) ");
+  s.writeln("There is a set of stairs leading down. Descend? (y/n) ");
   const k = await g.pc.keyboard.waitFor("y", "n");
   g.jumpPending = true;
   if (k.toLowerCase() === "y") {
@@ -168,7 +165,7 @@ async function stairs(g: Game, maze: Maze) {
       { row: 0, col: -1 },
       { row: 0, col: 1 },
     ]) {
-      if (atLine(3741, () => maze.at(add(a, d))) === Cell.Open) {
+      if (maze.peek(add(a, d)) === Cell.Open) {
         g.anchor = add(a, d);
         break;
       }
@@ -237,10 +234,7 @@ export function statusPanel(g: Game) {
   s.put(28, 61, "(C) For Commands", 9);
 }
 
-/**
- * Magic and health for both characters, red when low. The thresholds differ:
- * you go red below 35% health or 25% magic, your companion the other way round.
- */
+/** Magic and health for both characters, red below 35% health or 25% magic. */
 export function printVitals(g: Game) {
   const s = g.screen;
   const width = (max: number) => (max > 999 ? NUMBER_LEN * 2 + 4 : NUMBER_LEN * 2 + 1);
@@ -255,8 +249,8 @@ export function printVitals(g: Game) {
   const { hero: h, companion: c } = g;
   show(9, h.hp, h.hpMax, 0.35, g.fallen === "U");
   show(8, h.mp, h.mpMax, 0.25, false);
-  show(20, c.mp, c.mpMax, 0.35, false);
-  show(21, c.hp, c.hpMax, 0.25, g.fallen === "C");
+  show(20, c.mp, c.mpMax, 0.25, false);
+  show(21, c.hp, c.hpMax, 0.35, g.fallen === "C");
 }
 
 async function commandsMenu(g: Game, maze: Maze) {
@@ -269,9 +263,9 @@ async function commandsMenu(g: Game, maze: Maze) {
   s.writeln();
   for (const k of "DSRMQHE") s.writeln(`(${k})`);
   s.writeln();
-  s.writeln("Use the Arrows on the numeric key pad to move around the maze.");
+  s.writeln("Use the arrows on the numeric keypad to move around the maze.");
   s.writeln("When scrolling text appears, press 'U' to increase the speed and");
-  s.writeln("Press 'D' to decrease the speed.");
+  s.writeln("press 'D' to decrease the speed.");
 
   s.color(15);
   ["rink", "ave", "estore", "agic", "uit", "ints on the game.", "ffects, Sound. (On/Off)"].forEach((rest, i) => {
@@ -281,7 +275,6 @@ async function commandsMenu(g: Game, maze: Maze) {
   const key = (await g.pc.keyboard.waitKey()).toUpperCase();
   switch (key) {
     case "M":
-      // Casts from the anchor, which the footer above has just overwritten.
       await castFieldSpell(g, maze, g.anchor);
       statusPanel(g);
       break;

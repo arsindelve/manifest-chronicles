@@ -51,9 +51,12 @@ export async function titleScreen(g: Game, maze: Maze) {
   for (;;) {
     const choice = await s.inputText();
     if (choice === "R" || choice === "r") {
-      await restoreGame(g, maze, true);
-      maze.load(g, g.map);
-      return;
+      if (await restoreGame(g, maze)) return;
+      s.clear();
+      s.writeln();
+      s.color(15);
+      s.writeln("Will you (R)estore a previous quest, or (S)tart a new one? (r/s) ");
+      continue;
     }
     if (choice === "S" || choice === "s") {
       await newCharacterScreens(g);
@@ -62,12 +65,20 @@ export async function titleScreen(g: Game, maze: Maze) {
   }
 }
 
-/** The four races. Each pair is [intelligence, strength] multipliers for the dice. */
-const RACES: Record<string, { name: string; intel: number; strength: number }> = {
-  "1": { name: "A North Garkonen", intel: 6, strength: 6 },
-  // The race notes say North Garkonens are the brainy ones, but the
-  // numbers give the best intelligence to South Garkonens. Kept as it was.
-  "2": { name: "A South Garkonen", intel: 10, strength: 2 },
+interface Race {
+  name: string;
+  /** Multipliers for the intelligence and strength dice. */
+  intel: number;
+  strength: number;
+}
+
+/** Your companion is always one of these. */
+const SOUTH_GARKONEN: Race = { name: "A South Garkonen", intel: 6, strength: 6 };
+
+/** The four races, as the race notes describe them. */
+const RACES: Record<string, Race> = {
+  "1": { name: "A North Garkonen", intel: 10, strength: 2 },
+  "2": SOUTH_GARKONEN,
   "3": { name: "A North Carrion", intel: 4, strength: 8 },
   "4": { name: "A South Carrion", intel: 1, strength: 11 },
 };
@@ -80,7 +91,7 @@ export async function newCharacterScreens(g: Game) {
   await askNames(g);
 
   // Race
-  let race: (typeof RACES)[string] | undefined;
+  let race: Race | undefined;
   while (!race) {
     s.clear();
     footer(g);
@@ -135,21 +146,21 @@ export async function newCharacterScreens(g: Game) {
         [
           9,
           [
-            "North Garkonen's are very intelligent creatures that excel at magic.",
-            "They are weak and make poor fighters",
+            "North Garkonens are very intelligent creatures that excel at magic.",
+            "They are weak and make poor fighters.",
           ],
         ],
         [
           7,
           [
-            "The South Garkonen posseses average strength and intelligence.",
+            "The South Garkonen possesses average strength and intelligence.",
             "He will make a good magic user or a fighter.",
           ],
         ],
         [
           9,
           [
-            "North Carrion's are short, strong and stocky. They are not great magicians",
+            "North Carrions are short, strong and stocky. They are not great magicians.",
             "They are much better fighters.",
           ],
         ],
@@ -157,7 +168,7 @@ export async function newCharacterScreens(g: Game) {
           7,
           [
             "The South Carrion is a very dumb creature that excels on the field",
-            "of battle. They make terrible magicans, though, because they",
+            "of battle. They make terrible magicians, though, because they",
             "have no concept of what magic is.",
           ],
         ],
@@ -199,7 +210,7 @@ export async function newCharacterScreens(g: Game) {
       s.color(9);
       for (const l of [
         "You have the choice of being either a magic user or a fighter.",
-        "A magic user will have the abilty to use powerful spells, but",
+        "A magic user will have the ability to use powerful spells, but",
         "won't be able to carry the heavy weapons that the fighter can,",
         "and will not fight as well. Whatever you decide to be, your",
         "partner will be the other.",
@@ -224,8 +235,8 @@ export async function newCharacterScreens(g: Game) {
     companion.attack = Math.min(99, g.rng.below(60) + 30);
     companion.hp = Math.min(99, g.rng.below(90) + 50);
     const companionIntel = g.rng.below(42) + 1;
-    // A fighter's magic is just their race's intelligence factor (the hero's, even for the companion).
-    companion.mp = Math.min(99, companion.job === "A Fighter" ? race.intel : companionIntel * 5);
+    // A fighter's magic is just their race's intelligence factor.
+    companion.mp = Math.min(99, companion.job === "A Fighter" ? SOUTH_GARKONEN.intel : companionIntel * 5);
     hero.mp = Math.min(99, hero.job === "A Fighter" ? race.intel : intel * 5);
 
     statsTable(g);
@@ -323,7 +334,7 @@ async function askNames(g: Game) {
       s.color(15);
       s.writeln("You will venture through the Catacombs with a friend.");
       s.tab(20);
-      s.writeln("He or she will fight along side you. Please type a");
+      s.writeln("He or she will fight alongside you. Please type a");
       s.tab(20);
       s.writeln("name for this person.");
       await g.pause();

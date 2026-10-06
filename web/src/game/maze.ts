@@ -16,16 +16,18 @@ const SIZE = 55;
 
 export class Maze {
   private cells: Cell[][] = Array.from({ length: SIZE + 1 }, () => new Array<Cell>(SIZE + 1).fill(Cell.Open));
-  /**
-   * Staircase squares found on the last level loaded. Map 4 has none, so the
-   * list from map 3 is reused there, opening up squares at map 3's stair
-   * positions - the original kept this list across levels too.
-   */
+  /** Staircase squares on the level being loaded. */
   private stairs: Point[] = [];
   wallColor = 8;
 
   at(p: Point): Cell {
     return this.cells[check(p.row)][check(p.col)];
+  }
+
+  /** The cell at p, with everything off the grid counting as rock. */
+  peek(p: Point): Cell {
+    const inside = (i: number) => i >= 0 && i <= SIZE;
+    return inside(p.row) && inside(p.col) ? this.cells[p.row][p.col] : Cell.Wall;
   }
 
   set(p: Point, v: Cell) {
@@ -42,6 +44,7 @@ export class Maze {
 
     const f = atLine(1173, () => g.pc.readFile(`MAP.${level % 10}`));
     let found = 0;
+    this.stairs = [];
     for (let row = 1; row <= 50; row++) {
       if (row % 10 === 0) s.write(".");
       for (let col = 1; col <= 50; col++) {
@@ -56,7 +59,8 @@ export class Maze {
     // Only one of the ten staircases is real; the rest become floor.
     const keep = g.rng.roll(10);
     for (let i = 1; i <= 10; i++) {
-      if (i !== keep) this.set(this.stairs[i] ?? { row: 0, col: 0 }, Cell.Open);
+      const stairs = this.stairs[i] as Point | undefined; // map 4 has none
+      if (stairs && i !== keep) this.set(stairs, Cell.Open);
     }
 
     this.wallColor = level <= 3 ? 8 : 4;

@@ -4,20 +4,13 @@ import { atLine } from "../dos/errors";
 import { parseNumber } from "../dos/format";
 import type { Game } from "./state";
 
-/**
- * The "Manifest Chronicles v2.01" footer. Afterwards the original tries to
- * put the cursor back but swaps row and column, and it stores the cursor in
- * the game's saved-position variables - see Game.anchor. Both are kept.
- */
+/** The "Manifest Chronicles v2.01" footer, leaving the cursor where it was. */
 export function footer(g: Game) {
   const s = g.screen;
-  const col = Math.min(s.col, 80),
-    row = s.row;
-  g.anchor = { row: col, col: row };
+  const row = s.row,
+    col = Math.min(s.col, 80);
   s.put(25, 28, "Manifest Chronicles v2.01", 1);
-  atLine(1289, () => {
-    s.at(col, row);
-  });
+  s.at(row, col);
 }
 
 /** Draw a horizontal run of one character from column a to b on a row. */

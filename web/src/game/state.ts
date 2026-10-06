@@ -47,12 +47,6 @@ export class Game {
   xp = 0;
   map = 0;
   heading: Heading = 0;
-  /**
-   * The square-per-step vector for moving and drawing. It's updated from
-   * `heading` once per turn, after movement - so the very first move does
-   * nothing, and after a restore the first move follows the old heading.
-   */
-  step: Point = { row: 0, col: 0 };
   pos: Point = { row: 11, col: 11 };
   potions: Record<PotionColor, number> = { purple: 0, green: 0, white: 0, yellow: 0, blue: 0, red: 0, grey: 0 };
   invisible = false;
@@ -65,28 +59,20 @@ export class Game {
   caster: 1 | 2 = 1;
 
   /**
-   * The position the game saves, teleports to and casts location spells from.
-   * It's refreshed from `pos` at the start of each turn, but drawing the
-   * screen footer overwrites it with the cursor position (see ui.footer) -
-   * which is why saving or casting from the Commands menu, or right after an
-   * ambush, uses the wrong square. A bug from the original, kept on purpose.
+   * The position the game saves and casts location spells from: where you
+   * stood at the start of the turn. Stairs and Teleport set it and
+   * `jumpPending`, and the move happens at the end of the turn.
    */
   anchor: Point = { row: 0, col: 0 };
   /** Set when the next turn should jump to `anchor` (stairs, teleport, restore). */
   jumpPending = false;
 
-  /**
-   * One counter doing two jobs, as in the original: it counts steps while
-   * invisible (the potion wears off at 50) and is set to 1 once the chest
-   * has given out Excaliber, after which chests offer only lesser weapons.
-   */
-  sharedCounter = 0;
+  /** Steps taken while invisible; the potion wears off at 50. */
+  invisibleSteps = 0;
+  /** Set once a chest has given out Excalibur; after that, chests offer only lesser weapons. */
+  excaliburFound = false;
 
-  /**
-   * Combat bonuses from equipped gear, recalculated at the end of each turn -
-   * so gear picked up mid-battle only counts from the next turn. `heroDefense`
-   * also protects your companion, who never benefits from their own armour.
-   */
+  /** Combat bonuses from equipped gear (see refreshGear). */
   heroDefense = 0;
   heroOffense = 0;
   companionDefense = 0;
