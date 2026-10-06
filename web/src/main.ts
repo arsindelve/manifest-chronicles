@@ -9,9 +9,20 @@ import { PC } from "./dos/pc";
 import { pressAnyKey, showErrorScreen } from "./ide";
 import { runManifest } from "./game/game";
 
-const canvas = document.querySelector<HTMLCanvasElement>("#screen")!;
-const ctx = canvas.getContext("2d", { alpha: false })!;
-const startHint = document.querySelector<HTMLElement>("#start")!;
+/** An element index.html is known to have. */
+function element<T extends Element>(selector: string, type: new () => T): T {
+  const e = document.querySelector(selector);
+  if (!(e instanceof type)) throw new Error(`index.html has no ${selector}`);
+  return e;
+}
+
+const canvas = element("#screen", HTMLCanvasElement);
+const startHint = element("#start", HTMLElement);
+const ctx =
+  canvas.getContext("2d", { alpha: false }) ??
+  (() => {
+    throw new Error("this browser has no 2D canvas");
+  })();
 
 async function fetchBytes(path: string) {
   const r = await fetch(path);
@@ -55,7 +66,7 @@ function startRenderer(pc: PC) {
   const frame = (t: number) => {
     const v = pc.video;
     // The VGA text cursor blinks every 16 frames of 70 Hz.
-    const blink = Math.floor(t / (16 / 70 * 1000) * 2) % 2 === 0;
+    const blink = Math.floor((t / ((16 / 70) * 1000)) * 2) % 2 === 0;
     if (canvas.width !== v.width || canvas.height !== v.height) {
       canvas.width = v.width;
       canvas.height = v.height;
@@ -78,16 +89,24 @@ function startRenderer(pc: PC) {
 function dosKey(e: KeyboardEvent): string | null {
   if (e.ctrlKey || e.metaKey || e.altKey) return null;
   switch (e.key) {
-    case "Enter": return "\r";
-    case "Backspace": return "\b";
-    case "Escape": return "\x1b";
-    case "Tab": return "\t";
+    case "Enter":
+      return "\r";
+    case "Backspace":
+      return "\b";
+    case "Escape":
+      return "\x1b";
+    case "Tab":
+      return "\t";
     // The game wants the numeric keypad with Num Lock on; arrow keys stand in
     // for it on keyboards that don't have one.
-    case "ArrowUp": return "8";
-    case "ArrowDown": return "2";
-    case "ArrowLeft": return "4";
-    case "ArrowRight": return "6";
+    case "ArrowUp":
+      return "8";
+    case "ArrowDown":
+      return "2";
+    case "ArrowLeft":
+      return "4";
+    case "ArrowRight":
+      return "6";
   }
   return e.key.length === 1 && e.key >= " " && e.key <= "~" ? e.key : null;
 }
@@ -104,8 +123,10 @@ function attachKeyboard(pc: PC) {
   });
   // On phones, the Keyboard button focuses a hidden text field to bring up the
   // system keyboard; whatever is typed into it goes to the game.
-  const typing = document.querySelector<HTMLInputElement>("#typing")!;
-  document.querySelector("#type")?.addEventListener("click", () => typing.focus());
+  const typing = element("#typing", HTMLInputElement);
+  document.querySelector("#type")?.addEventListener("click", () => {
+    typing.focus();
+  });
   typing.addEventListener("beforeinput", (e) => {
     e.preventDefault();
     pc.speaker.unlock();
@@ -114,13 +135,13 @@ function attachKeyboard(pc: PC) {
     else for (const ch of e.data ?? "") if (ch >= " " && ch <= "~") pc.keyboard.push(ch);
   });
   // On-screen keypad for touch screens.
-  document.querySelectorAll<HTMLButtonElement>("[data-key]").forEach((b) =>
+  document.querySelectorAll<HTMLButtonElement>("[data-key]").forEach((b) => {
     b.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       pc.speaker.unlock();
-      pc.keyboard.push(b.dataset.key === "enter" ? "\r" : b.dataset.key!);
-    }),
-  );
+      pc.keyboard.push(b.dataset.key === "enter" ? "\r" : (b.dataset.key ?? ""));
+    });
+  });
 }
 
 function waitForStart(pc: PC) {
@@ -138,7 +159,7 @@ function waitForStart(pc: PC) {
   });
 }
 
-boot().catch((e) => {
-  startHint.textContent = `Couldn't start: ${e instanceof Error ? e.message : e}`;
+boot().catch((e: unknown) => {
+  startHint.textContent = `Couldn't start: ${e instanceof Error ? e.message : String(e)}`;
   startHint.hidden = false;
 });

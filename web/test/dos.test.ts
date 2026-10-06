@@ -9,18 +9,36 @@ import { makePC, screenLines, type } from "./headless";
 describe("numbers", () => {
   it("prints like STR$", () => {
     const cases: Array<[number, string]> = [
-      [1 / 3, " .3333333"], [1e7, " 1E+07"], [-5, "-5"], [0.5, " .5"], [2 ** 24, " 1.677722E+07"],
-      [9999999, " 9999999"], [Math.fround(Math.fround(1 / 7) * 1e6), " 142857.2"], [0, " 0"], [-0.25, "-.25"], [115, " 115"],
-      [0.001, " .001"], [0.0001, " .0001"], [1e-8, " 1E-08"], [123456.7, " 123456.7"], [-1e7, "-1E+07"],
-      [4.363585e-2, " 4.363585E-02"], [8.977669e-2, " 8.977669E-02"], [0.99058, " .99058"], [1234567, " 1234567"],
+      [1 / 3, " .3333333"],
+      [1e7, " 1E+07"],
+      [-5, "-5"],
+      [0.5, " .5"],
+      [2 ** 24, " 1.677722E+07"],
+      [9999999, " 9999999"],
+      [Math.fround(Math.fround(1 / 7) * 1e6), " 142857.2"],
+      [0, " 0"],
+      [-0.25, "-.25"],
+      [115, " 115"],
+      [0.001, " .001"],
+      [0.0001, " .0001"],
+      [1e-8, " 1E-08"],
+      [123456.7, " 123456.7"],
+      [-1e7, "-1E+07"],
+      [4.363585e-2, " 4.363585E-02"],
+      [8.977669e-2, " 8.977669E-02"],
+      [0.99058, " .99058"],
+      [1234567, " 1234567"],
     ];
     for (const [n, s] of cases) expect(formatNumber(n)).toBe(s);
   });
 
   it("accepts what QB accepts as a number", () => {
-    for (const ok of ["", "12", " -3 ", "1.5", ".5", "d", "e", "1e3", "2D2", ".", "7#"]) expect(isNumeric(ok), ok).toBe(true);
+    for (const ok of ["", "12", " -3 ", "1.5", ".5", "d", "e", "1e3", "2D2", ".", "7#"])
+      expect(isNumeric(ok), ok).toBe(true);
     for (const bad of ["12x", "hello", "1,2", "--1"]) expect(isNumeric(bad), bad).toBe(false);
-    expect([parseNumber("d"), parseNumber("1e3"), parseNumber(" 15  You"), parseNumber("04")]).toEqual([0, 1000, 15, 4]);
+    expect([parseNumber("d"), parseNumber("1e3"), parseNumber(" 15  You"), parseNumber("04")]).toEqual([
+      0, 1000, 15, 4,
+    ]);
   });
 
   it("rounds screen positions half to even", () => {
@@ -102,8 +120,16 @@ describe("screen", () => {
 describe("text files", () => {
   it("reads BASIC's sequential format, including empty lines", () => {
     const f = new TextReader(' 5 \r\n\r\n 10 \r\nMike\r\n\r\nHawke\r\n  spaced  \r\n"quo,ted"\r\n');
-    expect([f.number(), f.string(), f.number(), f.string(), f.string(), f.string(), f.string(), f.string()])
-      .toEqual([5, "", 10, "Mike", "", "Hawke", "spaced", "quo,ted"]);
+    expect([f.number(), f.string(), f.number(), f.string(), f.string(), f.string(), f.string(), f.string()]).toEqual([
+      5,
+      "",
+      10,
+      "Mike",
+      "",
+      "Hawke",
+      "spaced",
+      "quo,ted",
+    ]);
   });
 
   it("writes high-score records in print zones", () => {

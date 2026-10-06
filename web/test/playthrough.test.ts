@@ -16,7 +16,7 @@ import { loadGameData } from "../src/game/data";
 import { endgame } from "../src/game/endgame";
 import { runManifest } from "../src/game/game";
 import { Game } from "../src/game/state";
-import { fingerprint, makePC, press, screenLines, tick, untilWaiting } from "./headless";
+import { fingerprint, makePC, screenLines, tick, untilWaiting } from "./headless";
 
 /** A .SAV file: 38 lines, numbers printed the way PRINT # prints them. */
 const saveFile = (fields: Array<string | number>) =>
@@ -42,10 +42,10 @@ function start(pc: PC, program: () => Promise<unknown>): Run {
   const run: Run = { pc, log: [] };
   program().then(
     () => (run.outcome = "returned"),
-    (e) => {
+    (e: unknown) => {
       if (e instanceof ProgramEnded) run.outcome = "END";
       else if (e instanceof QBError) run.outcome = `QuickBASIC error: ${e.message}${e.line ? ` (line ${e.line})` : ""}`;
-      else run.outcome = `crashed: ${e}`;
+      else run.outcome = `crashed: ${String(e)}`;
     },
   );
   return run;
@@ -72,7 +72,9 @@ async function send(run: Run, label: string, keys: string) {
 
 /** The text on the cursor's line, up to the cursor. */
 function promptText(pc: PC) {
-  return screenLines(pc)[pc.screen.row - 1].slice(0, pc.screen.col - 1).trimEnd();
+  return screenLines(pc)
+    [pc.screen.row - 1].slice(0, pc.screen.col - 1)
+    .trimEnd();
 }
 
 /** Answers the text-mode prompts that come up in play. */
@@ -89,16 +91,17 @@ function responder() {
     // INPUT prompts show the cursor and want Enter; single-key prompts don't.
     const enter = pc.video.cursorVisible ? "\r" : "";
     if (/\(y\/n\)[ ?]*$/.test(prompt)) return yesNo.next() + enter;
-    if (/Heal Who\?/.test(prompt)) return "1\r";
-    if (/Who\? 1\) You/.test(screen) && !/\(A\)ttack/.test(screen)) return "1" + enter;
-    if (/What spell\? \(1-15\)/.test(screen)) return battleSpell.next();
-    if (/What spell\?$/.test(prompt)) return fieldSpell.next();
-    if (/How many hit points\?$/.test(prompt)) return /only needs? +0 *$/m.test(screen) ? "0\r" : "10\r";
-    if (/What Spell \?$/.test(prompt)) return locate.next();
-    if (/Which spell\?$/.test(prompt)) return /enough Magic Points/.test(prompt + screen.slice(-400)) ? "0\r" : "1\r";
+    if (prompt.includes("Heal Who?")) return "1\r";
+    if (screen.includes("Who? 1) You") && !screen.includes("(A)ttack")) return "1" + enter;
+    if (screen.includes("What spell? (1-15)")) return battleSpell.next();
+    if (prompt.endsWith("What spell?")) return fieldSpell.next();
+    if (prompt.endsWith("How many hit points?")) return /only needs? +0 *$/m.test(screen) ? "0\r" : "10\r";
+    if (prompt.endsWith("What Spell ?")) return locate.next();
+    if (prompt.endsWith("Which spell?"))
+      return (prompt + screen.slice(-400)).includes("enough Magic Points") ? "0\r" : "1\r";
     if (/Down\?$|Across\?$/.test(prompt)) return "15\r";
-    if (/drink\?$/.test(prompt)) return potion.next();
-    if (/\(A\)ttack/.test(screen)) return battle.next();
+    if (prompt.endsWith("drink?")) return potion.next();
+    if (screen.includes("(A)ttack")) return battle.next();
     if (/^\?$/.test(prompt) || /\? *$/.test(prompt)) return "1\r";
     return " ";
   };
@@ -175,12 +178,37 @@ describe("playthroughs", { timeout: 120000 }, () => {
     await send(run, "maze", " ");
     await play(run, ROUTE, 150);
     for (const [label, keys] of [
-      ["commands menu", "c"], ["hints", "h"], ["hint", "b"], ["hint 2", " "], ["hint 3", " "], ["hint end", " "],
-      ["sound off", "e"], ["eagle eye", "m"], ["caster", "y"], ["spell", "3\r"], ["5x5", "1\r"], ["back", " "],
-      ["location", "m"], ["caster", "y"], ["spell", "2\r"], ["quadrant", "1\r"], ["back", " "],
-      ["potions", "d"], ["no potion", "\r"], ["back", " "],
-      ["save", "s"], ["saved", "GOLDEN\r"], ["back", " "], ["restore", "r"], ["restored", "GOLDEN\r"],
-      ["walk", "8"], ["quit?", "q"], ["no", "n"], ["quit", "q"], ["yes", "y"], ["scores", " "],
+      ["commands menu", "c"],
+      ["hints", "h"],
+      ["hint", "b"],
+      ["hint 2", " "],
+      ["hint 3", " "],
+      ["hint end", " "],
+      ["sound off", "e"],
+      ["eagle eye", "m"],
+      ["caster", "y"],
+      ["spell", "3\r"],
+      ["5x5", "1\r"],
+      ["back", " "],
+      ["location", "m"],
+      ["caster", "y"],
+      ["spell", "2\r"],
+      ["quadrant", "1\r"],
+      ["back", " "],
+      ["potions", "d"],
+      ["no potion", "\r"],
+      ["back", " "],
+      ["save", "s"],
+      ["saved", "GOLDEN\r"],
+      ["back", " "],
+      ["restore", "r"],
+      ["restored", "GOLDEN\r"],
+      ["walk", "8"],
+      ["quit?", "q"],
+      ["no", "n"],
+      ["quit", "q"],
+      ["yes", "y"],
+      ["scores", " "],
     ] as const) {
       if (run.outcome) break;
       await send(run, `tour (${label}) ${JSON.stringify(keys)}`, keys);
@@ -201,20 +229,98 @@ describe("playthroughs", { timeout: 120000 }, () => {
 
   it("magic, potions and mishaps from a save", async () => {
     // A level-3 magic user with potions and plenty of magic, at the start of level 1.
-    const run = await fromSave([
-      10, 5, 5, 4, 0, 6, 5, 9, 2, "", 60, 3, 1, 0, 0, "Hawke", "", "Lorac", 60, 150, 600, 2000,
-      150, 11, 11, "A Magic User", 60, 600, 80, 120, 120, 2, 2, 2, 2, 2, 2, 2,
-    ], 777);
+    const run = await fromSave(
+      [
+        10,
+        5,
+        5,
+        4,
+        0,
+        6,
+        5,
+        9,
+        2,
+        "",
+        60,
+        3,
+        1,
+        0,
+        0,
+        "Hawke",
+        "",
+        "Lorac",
+        60,
+        150,
+        600,
+        2000,
+        150,
+        11,
+        11,
+        "A Magic User",
+        60,
+        600,
+        80,
+        120,
+        120,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+      ],
+      777,
+    );
     await play(run, ["2", "2", "6", "m", "6", "2", "d", "6", "4", "m"], 300);
     expect(finish(run)).toMatchSnapshot();
   });
 
   it("level 4 to the exit, and the fight with Beldan", async () => {
     // One step south of level 4's exit, facing north, with the best gear.
-    const run = await fromSave([
-      100, 75, 70, 23, 0, 26, 17, 25, 110, "", 999, 9, 4, 0, 0, "Hawke", "", "Lorac", 400, 9999, 50, 40000,
-      9999, 37, 21, "A Fighter", 999, 50, 300, 9999, 9999, 1, 1, 1, 1, 1, 1, 1,
-    ], 4242);
+    const run = await fromSave(
+      [
+        100,
+        75,
+        70,
+        23,
+        0,
+        26,
+        17,
+        25,
+        110,
+        "",
+        999,
+        9,
+        4,
+        0,
+        0,
+        "Hawke",
+        "",
+        "Lorac",
+        400,
+        9999,
+        50,
+        40000,
+        9999,
+        37,
+        21,
+        "A Fighter",
+        999,
+        50,
+        300,
+        9999,
+        9999,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+      ],
+      4242,
+    );
     await play(run, ["8"], 400);
     expect(finish(run)).toMatchSnapshot();
   });
@@ -222,9 +328,34 @@ describe("playthroughs", { timeout: 120000 }, () => {
   it("Beldan with a weaker party", async () => {
     const pc = makePC();
     const g = new Game(pc, loadGameData(pc));
-    Object.assign(g, { level: 9, xp: 40000, heroDefense: 40, heroOffense: 60, companionDefense: 30, companionOffense: 50 });
-    Object.assign(g.hero, { name: "Hawke", attack: 200, hp: 3000, hpMax: 3000, mp: 50, mpMax: 50, armor: 10, weapon: 12 });
-    Object.assign(g.companion, { name: "Lorac", attack: 150, hp: 2500, hpMax: 2500, mp: 600, mpMax: 600, armor: 8, weapon: 9 });
+    Object.assign(g, {
+      level: 9,
+      xp: 40000,
+      heroDefense: 40,
+      heroOffense: 60,
+      companionDefense: 30,
+      companionOffense: 50,
+    });
+    Object.assign(g.hero, {
+      name: "Hawke",
+      attack: 200,
+      hp: 3000,
+      hpMax: 3000,
+      mp: 50,
+      mpMax: 50,
+      armor: 10,
+      weapon: 12,
+    });
+    Object.assign(g.companion, {
+      name: "Lorac",
+      attack: 150,
+      hp: 2500,
+      hpMax: 2500,
+      mp: 600,
+      mpMax: 600,
+      armor: 8,
+      weapon: 9,
+    });
     for (const c of Object.keys(g.potions) as Array<keyof typeof g.potions>) g.potions[c] = 2;
     const run = start(pc, () => endgame(g));
     await play(run, [" "], 300);

@@ -20,10 +20,12 @@ function storage(): Storage | null {
 /** Normalise a DOS file name to upper-case 8.3, or throw "Bad file name". */
 export function dosName(name: string): string {
   const n = name.trim().toUpperCase();
-  const m = n.match(/^([^.\\/:*?"<>|+=;,\[\] ]{1,})(?:\.([^.\\/:*?"<>|+=;,\[\] ]{0,}))?$/);
+  const m = /^([^.\\/:*?"<>|+=;,[\] ]{1,})(?:\.([^.\\/:*?"<>|+=;,[\] ]{0,}))?$/.exec(n);
   if (!m) throw new QBError(64);
   // DOS silently truncates long names and extensions.
-  const base = m[1].slice(0, 8), ext = (m[2] ?? "").slice(0, 3);
+  const [, name8, ext3 = ""] = m;
+  const base = name8.slice(0, 8),
+    ext = ext3.slice(0, 3);
   return ext ? `${base}.${ext}` : base;
 }
 
@@ -37,7 +39,7 @@ export class Disk {
     for (const [name, text] of Object.entries(files)) this.data.set(name.toUpperCase(), text);
     if (this.store) {
       try {
-        this.order = JSON.parse(this.store.getItem(INDEX) ?? "[]");
+        this.order = JSON.parse(this.store.getItem(INDEX) ?? "[]") as string[];
       } catch {
         this.order = [];
       }
@@ -89,7 +91,8 @@ export function dosMatch(spec: string, name: string): boolean {
     return i < 0 ? [s, ""] : [s.slice(0, i), s.slice(i + 1)];
   };
   const part = (pat: string, s: string, len: number) => {
-    const p = pat.padEnd(len, " "), v = s.padEnd(len, " ");
+    const p = pat.padEnd(len, " "),
+      v = s.padEnd(len, " ");
     for (let i = 0; i < len; i++) {
       if (p[i] === "*") return true;
       if (p[i] !== "?" && p[i] !== v[i]) return false;

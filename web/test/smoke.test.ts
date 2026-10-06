@@ -5,8 +5,10 @@ import { makePC, screenLines, settle } from "./headless";
 it("starts up and shows the title", async () => {
   const pc = makePC();
   let failure: unknown;
-  void runManifest(pc).catch((e) => (failure = e));
+  void runManifest(pc).catch((e: unknown) => {
+    failure = e;
+  });
   await settle(pc);
-  if (failure) throw failure;
+  expect(failure).toBeUndefined();
   expect(screenLines(pc).join("\n")).toContain("Version 2.01 1994");
 });

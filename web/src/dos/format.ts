@@ -51,7 +51,7 @@ const NUMBER = /^[+-]?(\d*)(?:\.(\d*))?(?:[ED][+-]?\d*)?/i;
 
 /** VAL(): the leading number in a string (spaces ignored), or 0. */
 export function parseNumber(s: string): number {
-  const m = s.replace(/[ \t]/g, "").match(NUMBER);
+  const m = NUMBER.exec(s.replace(/[ \t]/g, ""));
   if (!m || (!m[1] && !m[2])) return 0;
   const n = Number(m[0].replace(/[ED]([+-]?)$/i, "").replace(/d/i, "e"));
   return Math.fround(Number.isFinite(n) ? n : 0);
@@ -60,7 +60,7 @@ export function parseNumber(s: string): number {
 /** Whether a typed INPUT reply is acceptable as a number. */
 export function isNumeric(s: string): boolean {
   const t = s.replace(/[ \t]/g, "");
-  const m = t.match(NUMBER);
+  const m = NUMBER.exec(t);
   return !!m && /^[!#%&]?$/.test(t.slice(m[0].length));
 }
 

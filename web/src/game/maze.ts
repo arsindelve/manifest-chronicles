@@ -45,7 +45,9 @@ export class Maze {
     for (let row = 1; row <= 50; row++) {
       if (row % 10 === 0) s.write(".");
       for (let col = 1; col <= 50; col++) {
-        const v = f.number() as Cell;
+        // The map files hold Cell values as plain numbers.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-assignment, @typescript-eslint/no-unnecessary-type-assertion
+        const v: Cell = f.number() as Cell;
         this.cells[row][col] = v;
         if (v === Cell.Stairs) this.stairs[++found] = { row, col };
       }

@@ -21,6 +21,7 @@ interface Frame {
   left?: readonly [Box, Box];
 }
 
+// prettier-ignore
 const FRAMES: readonly Frame[] = [
   { wall: [0, 0, 0, 0], opening: [0, 0, 0, 0] }, // depth 0: the original draws a single pixel here
   { wall: [0, 0, 450, 450], opening: [90, 90, 360, 360], right: [[360, 90, 450, 100], [360, 360, 450, 350]], left: [[90, 90, 0, 100], [90, 360, 0, 350]] },
@@ -35,7 +36,8 @@ const FRAMES: readonly Frame[] = [
 ];
 
 /** Where the perspective lines meet for each depth: [near corner, far corner]. */
-const VANISH: readonly (readonly [number, number])[] = [
+// prettier-ignore
+const VANISH: ReadonlyArray<readonly [number, number]> = [
   [0, 0], [90, 360], [143, 307], [170, 280], [185, 265], [195, 254], [202, 247], [207, 242], [210, 239], [212, 237],
 ];
 
@@ -57,8 +59,14 @@ export function drawCorridor(g: Game, maze: Maze) {
       else {
         g.viewDepth = depth;
         v.box(...f.opening, 0);
-        if (f.right && maze.at(add(here, right)) !== Cell.Wall) f.right.forEach((b) => v.box(...b, 0));
-        if (f.left && maze.at(add(here, left)) !== Cell.Wall) f.left.forEach((b) => v.box(...b, 0));
+        if (f.right && maze.at(add(here, right)) !== Cell.Wall)
+          f.right.forEach((b) => {
+            v.box(...b, 0);
+          });
+        if (f.left && maze.at(add(here, left)) !== Cell.Wall)
+          f.left.forEach((b) => {
+            v.box(...b, 0);
+          });
       }
     }
 

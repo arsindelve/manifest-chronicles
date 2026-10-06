@@ -100,8 +100,11 @@ export async function newCharacterScreens(g: Game) {
     s.tab(col);
     s.write("╗");
     const options: Array<[string, number]> = [
-      ["1) North Garkonen.......", 7], ["2) South Garkonen.......", 4], ["3) North Carrion........", 9],
-      ["4) South Carrion........", 7], ["?) What are all these?", 9],
+      ["1) North Garkonen.......", 7],
+      ["2) South Garkonen.......", 4],
+      ["3) North Carrion........", 9],
+      ["4) South Carrion........", 7],
+      ["?) What are all these?", 9],
     ];
     options.forEach(([text, color], i) => {
       if (i === 0) s.color(8);
@@ -129,14 +132,41 @@ export async function newCharacterScreens(g: Game) {
     if (choice === "?") {
       s.clear();
       const notes: Array<[number, string[]]> = [
-        [9, ["North Garkonen's are very intelligent creatures that excel at magic.", "They are weak and make poor fighters"]],
-        [7, ["The South Garkonen posseses average strength and intelligence.", "He will make a good magic user or a fighter."]],
-        [9, ["North Carrion's are short, strong and stocky. They are not great magicians", "They are much better fighters."]],
-        [7, ["The South Carrion is a very dumb creature that excels on the field", "of battle. They make terrible magicans, though, because they", "have no concept of what magic is."]],
+        [
+          9,
+          [
+            "North Garkonen's are very intelligent creatures that excel at magic.",
+            "They are weak and make poor fighters",
+          ],
+        ],
+        [
+          7,
+          [
+            "The South Garkonen posseses average strength and intelligence.",
+            "He will make a good magic user or a fighter.",
+          ],
+        ],
+        [
+          9,
+          [
+            "North Carrion's are short, strong and stocky. They are not great magicians",
+            "They are much better fighters.",
+          ],
+        ],
+        [
+          7,
+          [
+            "The South Carrion is a very dumb creature that excels on the field",
+            "of battle. They make terrible magicans, though, because they",
+            "have no concept of what magic is.",
+          ],
+        ],
       ];
       for (const [color, lines] of notes) {
         s.color(color);
-        lines.forEach((l) => s.writeln(l));
+        lines.forEach((l) => {
+          s.writeln(l);
+        });
         s.writeln();
       }
       s.color(8);
@@ -173,7 +203,8 @@ export async function newCharacterScreens(g: Game) {
         "won't be able to carry the heavy weapons that the fighter can,",
         "and will not fight as well. Whatever you decide to be, your",
         "partner will be the other.",
-      ]) s.writeln(l);
+      ])
+        s.writeln(l);
       s.writeln();
       s.color(8);
       await g.pause();
@@ -237,7 +268,12 @@ export async function newCharacterScreens(g: Game) {
 
 function stat(g: Game, col: number, attack: number, hp: number, intel: number, mp: number) {
   const s = g.screen;
-  const rows: Array<[string, number]> = [["Attack Points..", attack], ["Hit Points.....", hp], ["Intelligence...", intel], ["Magic Points...", mp]];
+  const rows: Array<[string, number]> = [
+    ["Attack Points..", attack],
+    ["Hit Points.....", hp],
+    ["Intelligence...", intel],
+    ["Magic Points...", mp],
+  ];
   rows.forEach(([label, value], i) => {
     s.at(11 + i, col);
     s.writeln(label, value);
@@ -271,10 +307,13 @@ async function askNames(g: Game) {
     s.at(12, 20);
     companion.name = await s.inputText("What is your companion's name? ");
     const problem =
-      companion.name.length > 9 ? "Please make your character name less than 10 characters."
-      : companion.name.length < 1 ? "Please enter something.                         "
-      : companion.name === hero.name ? "Wouldn't that be a bit confusing?                "
-      : "";
+      companion.name.length > 9
+        ? "Please make your character name less than 10 characters."
+        : companion.name.length < 1
+          ? "Please enter something.                         "
+          : companion.name === hero.name
+            ? "Wouldn't that be a bit confusing?                "
+            : "";
     if (problem) {
       s.tab(20);
       s.writeln(problem);
@@ -335,7 +374,8 @@ async function instructions(g: Game) {
     "                                         Enjoy the game",
     "                                          (Be Careful!)",
     "  ",
-  ]) s.writeln(l);
+  ])
+    s.writeln(l);
   s.color(15);
   s.writeln("Press any key to continue...");
   await g.pause();

@@ -61,8 +61,14 @@ export function loadGameData(pc: PC): GameData {
     const f = pc.readFile("MONSTERS.DAT");
     for (;;) {
       const m: Monster = {
-        name: f.string(), speed: f.number(), hp: f.number(), attack: f.number(),
-        xp: f.number(), weapon: f.number(), armor: f.number(), spellLevel: f.number(),
+        name: f.string(),
+        speed: f.number(),
+        hp: f.number(),
+        attack: f.number(),
+        xp: f.number(),
+        weapon: f.number(),
+        armor: f.number(),
+        spellLevel: f.number(),
       };
       monsters.push(m);
       if (m.name === "Eod") break;
@@ -100,7 +106,7 @@ export function loadGameData(pc: PC): GameData {
       if (s.name === "EOD") break;
     }
   }
-  const monsterSpells: MonsterSpell[] = new Array(11).fill({ name: "", low: 0, high: 0 });
+  const monsterSpells: MonsterSpell[] = new Array<MonsterSpell>(11).fill({ name: "", low: 0, high: 0 });
   listed.forEach((s, i) => (monsterSpells[10 - i] = s)); // the EOD row lands at index 0
 
   return {

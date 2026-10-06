@@ -35,19 +35,44 @@ export async function saveGame(g: Game, at: Point) {
   }
 
   const { hero: h, companion: c, potions: p } = g;
-  atLine(3668, () => g.pc.writeFile(name + ".SAV", (w) => {
-    for (const v of [g.heroDefense, g.companionOffense, g.companionDefense, h.armor, 0, h.weapon, c.armor, c.weapon, g.heroOffense])
-      w.line(v);
-    w.line(g.invisible ? "Yes" : "");
-    for (const v of [c.mp, g.level, g.map, 0, g.heading]) w.line(v);
-    w.line(h.name);
-    w.line(g.fallen);
-    w.line(c.name);
-    for (const v of [h.attack, h.hp, h.mp, g.xp, h.hpMax, at.row, at.col]) w.line(v);
-    w.line(h.job);
-    for (const v of [c.mpMax, h.mpMax, c.attack, c.hp, c.hpMax, p.purple, p.green, p.white, p.yellow, p.blue, p.red, p.grey])
-      w.line(v);
-  }));
+  atLine(3668, () => {
+    g.pc.writeFile(name + ".SAV", (w) => {
+      for (const v of [
+        g.heroDefense,
+        g.companionOffense,
+        g.companionDefense,
+        h.armor,
+        0,
+        h.weapon,
+        c.armor,
+        c.weapon,
+        g.heroOffense,
+      ])
+        w.line(v);
+      w.line(g.invisible ? "Yes" : "");
+      for (const v of [c.mp, g.level, g.map, 0, g.heading]) w.line(v);
+      w.line(h.name);
+      w.line(g.fallen);
+      w.line(c.name);
+      for (const v of [h.attack, h.hp, h.mp, g.xp, h.hpMax, at.row, at.col]) w.line(v);
+      w.line(h.job);
+      for (const v of [
+        c.mpMax,
+        h.mpMax,
+        c.attack,
+        c.hp,
+        c.hpMax,
+        p.purple,
+        p.green,
+        p.white,
+        p.yellow,
+        p.blue,
+        p.red,
+        p.grey,
+      ])
+        w.line(v);
+    });
+  });
 
   s.color(9);
   s.writeln();
@@ -66,7 +91,9 @@ export async function restoreGame(g: Game, maze: Maze, fromTitle = false) {
   footer(g);
 
   s.color(9);
-  atLine(3524, () => g.pc.listFiles("*.SAV"));
+  atLine(3524, () => {
+    g.pc.listFiles("*.SAV");
+  });
   s.writeln();
   s.color(15);
   s.writeln("What savegame do you want to restore? (DO NOT ADD .SAV)");
@@ -139,7 +166,8 @@ const scores: Score[] = Array.from({ length: 12 }, () => ({ name: "", companion:
 
 export async function highScores(g: Game) {
   const f = atLine(1442, () => g.pc.readFile("HIGH.DAT"));
-  for (let i = 1; i <= 10; i++) scores[i] = { name: f.string(), companion: f.string(), level: f.number(), xp: f.number() };
+  for (let i = 1; i <= 10; i++)
+    scores[i] = { name: f.string(), companion: f.string(), level: f.number(), xp: f.number() };
 
   // Update your existing entry if you beat it, otherwise add you at slot 11.
   let from = 0;
@@ -237,7 +265,15 @@ export async function slideIn(g: Game, text: string, color: number, from: number
 
 // ------------------------------------------------------------------ hints
 
-const HINT_TOPICS: Record<string, string> = { f: "HELP.1", p: "HELP.2", m: "HELP.3", s: "HELP.4", l: "HELP.5", b: "HELP.6", w: "HELP.7" };
+const HINT_TOPICS: Record<string, string> = {
+  f: "HELP.1",
+  p: "HELP.2",
+  m: "HELP.3",
+  s: "HELP.4",
+  l: "HELP.5",
+  b: "HELP.6",
+  w: "HELP.7",
+};
 
 export async function showHints(g: Game) {
   const s = g.screen;
@@ -251,7 +287,14 @@ export async function showHints(g: Game) {
   s.writeln("Press the letter of the topic you wish to view.");
   s.writeln();
   // (P) has a topic too, though the menu doesn't list it.
-  for (const [key, rest] of [["F", "ighting Battles"], ["M", "agic "], ["S", "urviving the Maze"], ["L", "ocating the Stairs"], ["W", "eapons and Armor"], ["B", "ackground "]]) {
+  for (const [key, rest] of [
+    ["F", "ighting Battles"],
+    ["M", "agic "],
+    ["S", "urviving the Maze"],
+    ["L", "ocating the Stairs"],
+    ["W", "eapons and Armor"],
+    ["B", "ackground "],
+  ]) {
     s.color(9);
     s.write(`(${key})`);
     s.color(15);

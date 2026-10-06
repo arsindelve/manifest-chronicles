@@ -12,7 +12,14 @@ import { endProgram, slideIn } from "./records";
 import type { Character, Game } from "./state";
 import { hline, typeOut, vline } from "./ui";
 
-const BELDAN = { name: "Beldan", weapon: "Satan's Blade", armor: "Demon Armor", hp: 3500, attack: 1000, spellLevel: 10 };
+const BELDAN = {
+  name: "Beldan",
+  weapon: "Satan's Blade",
+  armor: "Demon Armor",
+  hp: 3500,
+  attack: 1000,
+  spellLevel: 10,
+};
 /** Beldan's strength in the damage maths (a regular monster's table index). */
 const STRENGTH = 30;
 const LEVEL = 10;
@@ -273,10 +280,11 @@ async function victory(g: Game): Promise<never> {
   const text = "Congratulations Warrior ";
   s.color(4);
   for (let i = 1; i <= text.length; i++) {
-    if (i !== 12) for (let col = 1; col <= 79; col++) {
-      s.at(i, col);
-      s.write(" ");
-    }
+    if (i !== 12)
+      for (let col = 1; col <= 79; col++) {
+        s.at(i, col);
+        s.write(" ");
+      }
     for (let j = 55; j >= 28; j -= 2) {
       s.put(12, j + i, text[i - 1]);
       s.put(12, j + 1 + i, " ");

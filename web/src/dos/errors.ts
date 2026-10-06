@@ -15,7 +15,10 @@ export class QBError extends Error {
   /** The M.BAS line the failing operation comes from, for the error screen. */
   line?: number;
 
-  constructor(public code: number, line?: number) {
+  constructor(
+    public code: number,
+    line?: number,
+  ) {
     super(ERROR_MESSAGES[code] ?? "Unprintable error");
     this.line = line;
   }
@@ -29,7 +32,13 @@ export function atLine<T>(line: number, f: () => T): T {
   };
   try {
     const r = f();
-    return (r instanceof Promise ? r.catch((e) => Promise.reject(tag(e))) : r) as T;
+    return (
+      r instanceof Promise
+        ? r.catch((e: unknown) => {
+            throw tag(e);
+          })
+        : r
+    ) as T;
   } catch (e) {
     throw tag(e);
   }

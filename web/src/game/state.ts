@@ -95,7 +95,10 @@ export class Game {
   /** The 3D view's last drawn depth; carries over between frames like the original. */
   viewDepth = 0;
 
-  constructor(readonly pc: PC, readonly data: GameData) {}
+  constructor(
+    readonly pc: PC,
+    readonly data: GameData,
+  ) {}
 
   get screen() {
     return this.pc.screen;

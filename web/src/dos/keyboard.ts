@@ -15,7 +15,9 @@ export class Keyboard {
     if (this.buffer.length < 15) this.buffer.push(key);
     const waiters = this.waiters;
     this.waiters = [];
-    waiters.forEach((wake) => wake());
+    waiters.forEach((wake) => {
+      wake();
+    });
   }
 
   clear() {

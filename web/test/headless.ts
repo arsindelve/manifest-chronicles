@@ -22,13 +22,17 @@ export function makePC(extraFiles: Record<string, string> = {}) {
 /** The text screen as 25 strings of 80 characters. */
 export function screenLines(pc: PC): string[] {
   const t = pc.video.text;
-  return Array.from({ length: 25 }, (_, r) => Array.from({ length: 80 }, (_, c) => CP437[t[r * 80 + c] & 0xff]).join(""));
+  return Array.from({ length: 25 }, (_, r) =>
+    Array.from({ length: 80 }, (_, c) => CP437[t[r * 80 + c] & 0xff]).join(""),
+  );
 }
 
 /** [character byte, attribute] for every cell. */
 export function screenCells(pc: PC): Array<Array<[number, number]>> {
   const t = pc.video.text;
-  return Array.from({ length: 25 }, (_, r) => Array.from({ length: 80 }, (_, c) => [t[r * 80 + c] & 0xff, t[r * 80 + c] >> 8] as [number, number]));
+  return Array.from({ length: 25 }, (_, r) =>
+    Array.from({ length: 80 }, (_, c) => [t[r * 80 + c] & 0xff, t[r * 80 + c] >> 8] as [number, number]),
+  );
 }
 
 export const tick = (ms = 20) => new Promise((r) => setTimeout(r, ms));
@@ -72,18 +76,10 @@ export async function untilWaiting(pc: PC, maxMs = 10000) {
   }
 }
 
-/** Type each key at the moment the game asks for one. */
-export async function press(pc: PC, keys: string) {
-  for (const k of keys) {
-    await untilWaiting(pc);
-    pc.keyboard.push(k);
-  }
-}
-
 /** A short fingerprint of the screen (text and colours, or pixels) and the RND state. */
 export function fingerprint(pc: PC): string {
   const data = pc.video.mode === 0 ? new Uint8Array(pc.video.text.buffer) : pc.video.pixels;
   let h = 0x811c9dc5;
-  for (let i = 0; i < data.length; i++) h = Math.imul(h ^ data[i], 0x01000193);
+  for (const byte of data) h = Math.imul(h ^ byte, 0x01000193);
   return `${pc.video.mode === 0 ? "text" : "vga"} ${(h >>> 0).toString(16).padStart(8, "0")} rnd ${pc.rng.seed}`;
 }

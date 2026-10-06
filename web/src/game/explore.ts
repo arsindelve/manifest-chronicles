@@ -15,12 +15,12 @@ import { drawCorridor } from "./view3d";
 export async function explore(g: Game, maze: Maze) {
   let key = "TEST"; // the first pass draws the view without waiting for a key
   g.soundOn = true;
-  await statusPanel(g);
+  statusPanel(g);
 
   for (;;) {
     if (maze.at(g.pos) === Cell.Stairs) {
       await stairs(g, maze);
-      await statusPanel(g);
+      statusPanel(g);
       key = " ";
     }
 
@@ -31,7 +31,7 @@ export async function explore(g: Game, maze: Maze) {
     if (maze.at(g.pos) === Cell.Story) {
       await tellStory(g);
       maze.set(g.pos, Cell.Open);
-      await statusPanel(g);
+      statusPanel(g);
     }
 
     if (g.invisible) {
@@ -52,12 +52,12 @@ export async function explore(g: Game, maze: Maze) {
 
     if (!g.invisible && g.rng.roll(20) === 1) {
       await encounter(g);
-      await statusPanel(g);
+      statusPanel(g);
     }
 
     if (g.rng.roll(600) === 1) {
       await openChest(g);
-      await statusPanel(g);
+      statusPanel(g);
     }
 
     for (const c of [g.hero, g.companion]) c.hp = Math.floor(c.hp);
@@ -76,31 +76,31 @@ export async function explore(g: Game, maze: Maze) {
     switch (key.toUpperCase()) {
       case "M":
         await castFieldSpell(g, maze, g.anchor);
-        await statusPanel(g);
+        statusPanel(g);
         break;
       case "D":
         await potionMenu(g);
-        await statusPanel(g);
+        statusPanel(g);
         break;
       case "C":
         await commandsMenu(g, maze);
-        await statusPanel(g);
+        statusPanel(g);
         break;
       case "S":
         await saveGame(g, g.anchor);
-        await statusPanel(g);
+        statusPanel(g);
         break;
       case "R":
         await restoreGame(g, maze);
-        await statusPanel(g);
+        statusPanel(g);
         break;
       case "Q":
         await quit(g);
-        await statusPanel(g);
+        statusPanel(g);
         break;
       case "H":
         await showHints(g);
-        await statusPanel(g);
+        statusPanel(g);
         break;
       case "E":
         g.soundOn = !g.soundOn;
@@ -114,7 +114,9 @@ export async function explore(g: Game, maze: Maze) {
 
     g.refreshGear();
     g.screen.mode(12);
-    atLine(416, () => drawCorridor(g, maze));
+    atLine(416, () => {
+      drawCorridor(g, maze);
+    });
     key = "";
 
     const s = g.screen;
@@ -160,7 +162,12 @@ async function stairs(g: Game, maze: Maze) {
   } else {
     // Step off the stairs onto the first open square beside the anchor.
     const a = g.anchor;
-    for (const d of [{ row: -1, col: 0 }, { row: 1, col: 0 }, { row: 0, col: -1 }, { row: 0, col: 1 }]) {
+    for (const d of [
+      { row: -1, col: 0 },
+      { row: 1, col: 0 },
+      { row: 0, col: -1 },
+      { row: 0, col: 1 },
+    ]) {
       if (atLine(3741, () => maze.at(add(a, d))) === Cell.Open) {
         g.anchor = add(a, d);
         break;
@@ -170,7 +177,7 @@ async function stairs(g: Game, maze: Maze) {
 }
 
 /** The side panel: heading, both characters' vitals and gear, level and XP. */
-export async function statusPanel(g: Game) {
+export function statusPanel(g: Game) {
   const s = g.screen;
   const { armor, weapons } = g.data;
   s.mode(12);
@@ -197,7 +204,8 @@ export async function statusPanel(g: Game) {
     hline(g, top + 7, 59, 64, "─");
     hline(g, top + 7, 66, 79, "─");
     s.color(15);
-    const a = armor[c.armor].name, w = weapons[c.weapon].name;
+    const a = armor[c.armor].name,
+      w = weapons[c.weapon].name;
     s.put(top + 8, 70 - a.length / 2, a);
     s.put(top + 9, 70 - w.length / 2, w);
     s.color(1);
@@ -266,20 +274,20 @@ async function commandsMenu(g: Game, maze: Maze) {
   s.writeln("Press 'D' to decrease the speed.");
 
   s.color(15);
-  ["rink", "ave", "estore", "agic", "uit", "ints on the game.", "ffects, Sound. (On/Off)"].forEach((rest, i) =>
-    s.put(i + 2, 4, rest),
-  );
+  ["rink", "ave", "estore", "agic", "uit", "ints on the game.", "ffects, Sound. (On/Off)"].forEach((rest, i) => {
+    s.put(i + 2, 4, rest);
+  });
 
   const key = (await g.pc.keyboard.waitKey()).toUpperCase();
   switch (key) {
     case "M":
       // Casts from the anchor, which the footer above has just overwritten.
       await castFieldSpell(g, maze, g.anchor);
-      await statusPanel(g);
+      statusPanel(g);
       break;
     case "D":
       await potionMenu(g);
-      await statusPanel(g);
+      statusPanel(g);
       break;
     case "S":
       await saveGame(g, g.anchor);
@@ -289,11 +297,11 @@ async function commandsMenu(g: Game, maze: Maze) {
       break;
     case "Q":
       await quit(g);
-      await statusPanel(g);
+      statusPanel(g);
       break;
     case "H":
       await showHints(g);
-      await statusPanel(g);
+      statusPanel(g);
       break;
     case "E":
       g.soundOn = !g.soundOn;

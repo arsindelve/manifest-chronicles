@@ -4,13 +4,20 @@
   --dim: #555;
   --accent: #55f;
 }
-* { box-sizing: border-box; }
-html, body {
+* {
+  box-sizing: border-box;
+}
+html,
+body {
   margin: 0;
   height: 100%;
   background: var(--bg);
   color: var(--fg);
-  font: 14px/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font:
+    14px/1.4 ui-monospace,
+    "Cascadia Mono",
+    Consolas,
+    monospace;
 }
 main {
   min-height: 100%;
@@ -45,7 +52,9 @@ main {
   color: var(--fg);
   pointer-events: none;
 }
-#start[hidden] { display: none; }
+#start[hidden] {
+  display: none;
+}
 .keypad {
   display: none;
   grid-template-columns: repeat(6, 1fr);
@@ -61,8 +70,12 @@ main {
   border-radius: 4px;
   touch-action: manipulation;
 }
-.keypad button:active { background: #222; }
-.keypad .wide { grid-column: span 6; }
+.keypad button:active {
+  background: #222;
+}
+.keypad .wide {
+  grid-column: span 6;
+}
 /* Off-screen text field that brings up a phone's keyboard. */
 #typing {
   position: fixed;
@@ -73,7 +86,9 @@ main {
   opacity: 0;
 }
 @media (pointer: coarse) {
-  .keypad { display: grid; }
+  .keypad {
+    display: grid;
+  }
 }
 .credit {
   margin: 0;
@@ -82,4 +97,6 @@ main {
   color: var(--dim);
   font-size: 12px;
 }
-.credit a { color: var(--accent); }
+.credit a {
+  color: var(--accent);
+}

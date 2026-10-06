@@ -23,7 +23,10 @@ export class Terminal {
   row = 1;
   col = 1;
 
-  constructor(readonly video: Video, private keyboard: Keyboard) {}
+  constructor(
+    readonly video: Video,
+    private keyboard: Keyboard,
+  ) {}
 
   get rows() {
     return this.video.rows;
@@ -140,7 +143,7 @@ export class Terminal {
             erase(cell);
           }
         } else if (k === "\x1b") {
-          while (cells.length) erase(cells.pop()!);
+          for (let cell = cells.pop(); cell; cell = cells.pop()) erase(cell);
           text = "";
         } else if (k.length === 1 && k >= " " && text.length < 255) {
           if (this.col > 80) this.newline();

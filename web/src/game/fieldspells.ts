@@ -14,7 +14,14 @@ export async function castFieldSpell(g: Game, maze: Maze, from: Point) {
   s.put(5, 10, "Spells....", 15);
   s.color(9);
   s.writeln();
-  for (const line of ["0 To Quit ", "1) Heal...........", "2) Location.......", "3) Eagle Eye......", "4) Life...........", "5) Teleport......."]) {
+  for (const line of [
+    "0 To Quit ",
+    "1) Heal...........",
+    "2) Location.......",
+    "3) Eagle Eye......",
+    "4) Life...........",
+    "5) Teleport.......",
+  ]) {
     s.tab(20);
     s.writeln(line);
   }
@@ -72,8 +79,7 @@ export async function chooseCaster(g: Game, tab: number) {
 }
 
 /** The caster's line when they're short of magic: "You don't..." or "<name> does not...". */
-const lacks = (g: Game, c: Character, you: string, them: string) =>
-  c === g.hero ? [you] : [c.name, them];
+const lacks = (g: Game, c: Character, you: string, them: string) => (c === g.hero ? [you] : [c.name, them]);
 
 /** 10 magic points per hit point. */
 async function heal(g: Game, caster: Character) {
@@ -88,7 +94,8 @@ async function heal(g: Game, caster: Character) {
   s.color(9);
   s.writeln(" 10  Magic Points per hit point.");
   if (g.fallen !== "U") s.writeln((hero.hpMax - hero.hp) * 10, " Magic points to heal you fully.");
-  if (g.fallen !== "C") s.writeln((companion.hpMax - companion.hp) * 10, " Magic Points to heal ", companion.name, " fully.");
+  if (g.fallen !== "C")
+    s.writeln((companion.hpMax - companion.hp) * 10, " Magic Points to heal ", companion.name, " fully.");
   s.writeln();
   s.color(13);
 
@@ -161,18 +168,38 @@ async function location(g: Game, caster: Character, from: Point) {
         if (you) await g.pause();
         return;
       }
-      s.writeln(...lacks(g, caster, "You do not have enough Magic Points to cast that.", " does not have enough Magic Points to cast that."));
+      s.writeln(
+        ...lacks(
+          g,
+          caster,
+          "You do not have enough Magic Points to cast that.",
+          " does not have enough Magic Points to cast that.",
+        ),
+      );
     } else if (which === 2) {
       if (caster.mp >= 150) {
         s.color(15);
         if (g.soundOn) await g.clock.spellSound();
-        s.writeln("You are ", from.col - 10, " steps east and ", from.row - 10, " steps south of your original location.");
+        s.writeln(
+          "You are ",
+          from.col - 10,
+          " steps east and ",
+          from.row - 10,
+          " steps south of your original location.",
+        );
         await g.pause();
         caster.mp -= 150;
         if (!you) await g.pause();
         return;
       }
-      s.writeln(...lacks(g, caster, "You don't have enough Magic Points to cast that.", " does not have enough Magic Points to cast that."));
+      s.writeln(
+        ...lacks(
+          g,
+          caster,
+          "You don't have enough Magic Points to cast that.",
+          " does not have enough Magic Points to cast that.",
+        ),
+      );
       await g.pause();
       if (!you) await g.pause();
     } else if (which === 0) return;
@@ -186,7 +213,8 @@ async function eagleEye(g: Game, maze: Maze, caster: Character, from: Point) {
   footer(g);
   s.color(13);
   s.writeln();
-  for (const line of ["0) Quit", "1) 5x5..........100 MP", "2) 10x10........250 MP", "3) 20x20........500 MP"]) s.writeln(line);
+  for (const line of ["0) Quit", "1) 5x5..........100 MP", "2) 10x10........250 MP", "3) 20x20........500 MP"])
+    s.writeln(line);
   s.writeln();
 
   const sizes = [
@@ -199,13 +227,20 @@ async function eagleEye(g: Game, maze: Maze, caster: Character, from: Point) {
     s.color(15);
     const which = await s.inputNumber("Which spell? ");
     if (which === 0) return;
-    const pick = sizes[which - 1];
+    const pick = sizes[which - 1] as (typeof sizes)[number] | undefined; // nothing for 4, 1.5, -2 ...
     if (!pick) continue;
     if (caster.mp >= pick.cost) {
       size = pick;
       break;
     }
-    s.writeln(...lacks(g, caster, "You don't have enough Magic Points to cast that.", " does not have enough Magic Points to cast that."));
+    s.writeln(
+      ...lacks(
+        g,
+        caster,
+        "You don't have enough Magic Points to cast that.",
+        " does not have enough Magic Points to cast that.",
+      ),
+    );
   }
 
   s.clear();
@@ -261,7 +296,9 @@ async function teleport(g: Game, maze: Maze, caster: Character) {
   footer(g);
   s.writeln("500 MP to Teleport.......");
   if (caster.mp < 500) {
-    s.writeln(...(caster === g.hero ? ["You don't have enough Magic."] : [caster.name, " does not have enough Magic."]));
+    s.writeln(
+      ...(caster === g.hero ? ["You don't have enough Magic."] : [caster.name, " does not have enough Magic."]),
+    );
     return;
   }
   caster.mp -= 500;

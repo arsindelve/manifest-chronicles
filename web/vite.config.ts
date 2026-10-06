@@ -15,7 +15,10 @@ function gameData(): Plugin {
       server.middlewares.use((req, res, next) => {
         const m = req.url?.match(/^\/data\/([^?]+)/);
         const name = m && decodeURIComponent(m[1]);
-        if (!name || !DATA_FILES.includes(name)) return next();
+        if (!name || !DATA_FILES.includes(name)) {
+          next();
+          return;
+        }
         res.setHeader("Content-Type", "application/octet-stream");
         res.end(readFileSync(resolve(ROOT, name)));
       });

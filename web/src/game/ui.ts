@@ -11,10 +11,13 @@ import type { Game } from "./state";
  */
 export function footer(g: Game) {
   const s = g.screen;
-  const col = Math.min(s.col, 80), row = s.row;
+  const col = Math.min(s.col, 80),
+    row = s.row;
   g.anchor = { row: col, col: row };
   s.put(25, 28, "Manifest Chronicles v2.01", 1);
-  atLine(1289, () => s.at(col, row));
+  atLine(1289, () => {
+    s.at(col, row);
+  });
 }
 
 /** Draw a horizontal run of one character from column a to b on a row. */

@@ -25,11 +25,11 @@ import { makePC, screenCells, settle, tick, type } from "./headless";
 
 const API = "http://127.0.0.1:8086/api/v1";
 /** DOSBox Staging's executable. */
-const EXE = process.env.DOSBOX_EXE!;
+const EXE = process.env.DOSBOX_EXE ?? "";
 /** A DOSBox config that enables the REST API and runs QB.EXE /RUN M.BAS from C:\GAME. */
-const CONF = process.env.DOSBOX_CONF!;
+const CONF = process.env.DOSBOX_CONF ?? "";
 /** The folder mounted as C:\GAME (M.BAS and its data files). */
-const GAME_DIR = process.env.GAME_DIR!;
+const GAME_DIR = process.env.GAME_DIR ?? "";
 /** Optional: a script that captures the DOSBox window and diffs it with our frame (see README). */
 const GRAB = process.env.GRAB_SCRIPT;
 
@@ -64,14 +64,17 @@ async function poke(addr: number, bytes: number[]) {
 
 const SCAN: Record<string, number> = { "\r": 0x1c, "\b": 0x0e, " ": 0x39 };
 "1234567890".split("").forEach((c, i) => (SCAN[c] = 2 + i));
-["qwertyuiop", "asdfghjkl", "zxcvbnm"].forEach((row, r) => row.split("").forEach((c, i) => (SCAN[c] = [0x10, 0x1e, 0x2c][r] + i)));
+["qwertyuiop", "asdfghjkl", "zxcvbnm"].forEach((row, r) => {
+  row.split("").forEach((c, i) => (SCAN[c] = [0x10, 0x1e, 0x2c][r] + i));
+});
 
 /** Type into the original through the BIOS keyboard buffer. */
 async function refType(keys: string) {
   for (const k of keys) {
     for (;;) {
       const b = await mem(0x41a, 4);
-      const head = b[0] | (b[1] << 8), tail = b[2] | (b[3] << 8);
+      const head = b[0] | (b[1] << 8),
+        tail = b[2] | (b[3] << 8);
       const next = tail + 2 >= 0x3e ? 0x1e : tail + 2;
       if (next === head) {
         await tick(20);
@@ -99,7 +102,8 @@ async function refMode() {
 async function refCells(): Promise<Cells> {
   const b = await mem(0xb8000, 4000);
   return Array.from({ length: 25 }, (_, r) =>
-    Array.from({ length: 80 }, (_, c) => [b[(r * 80 + c) * 2], b[(r * 80 + c) * 2 + 1]] as [number, number]));
+    Array.from({ length: 80 }, (_, c) => [b[(r * 80 + c) * 2], b[(r * 80 + c) * 2 + 1]] as [number, number]),
+  );
 }
 
 /** Wait until the original's screen and video mode stay still for `quiet` ms. */
@@ -109,7 +113,7 @@ async function refSettle(quiet = 1500, max = 90000) {
   const start = Date.now();
   for (;;) {
     await tick(150);
-    const now = (await refMode()) + JSON.stringify(await refCells());
+    const now = `${await refMode()} ${JSON.stringify(await refCells())}`;
     if (now !== last) {
       last = now;
       since = Date.now();
@@ -160,10 +164,10 @@ function matchingPC(files: Record<string, string> = {}) {
 /** Run a program on our PC and, when it stops, show what the page shows. */
 function runOurs(pc: PC, program: (pc: PC) => Promise<unknown>) {
   const source = decodeCP437(new Uint8Array(readFileSync(resolve(__dirname, "../../original/M.BAS"))));
-  void program(pc).catch((e) => {
+  void program(pc).catch((e: unknown) => {
     if (e instanceof ProgramEnded) return pressAnyKey(pc);
     if (e instanceof QBError) return showErrorScreen(pc, e, source);
-    log(`--- TypeScript game stopped: ${e instanceof Error ? e.stack : e}`);
+    log(`--- TypeScript game stopped: ${e instanceof Error ? (e.stack ?? e.message) : String(e)}`);
   });
 }
 
@@ -176,7 +180,14 @@ const log = (s: string) => {
 };
 
 function text(c: Cells) {
-  return c.map((row) => row.map(([ch]) => String.fromCharCode(ch < 32 ? 32 : ch)).join("").trimEnd()).join("\n");
+  return c
+    .map((row) =>
+      row
+        .map(([ch]) => String.fromCharCode(ch < 32 ? 32 : ch))
+        .join("")
+        .trimEnd(),
+    )
+    .join("\n");
 }
 
 function diff(name: string, ref: Cells, ours: Cells) {
@@ -187,20 +198,36 @@ function diff(name: string, ref: Cells, ours: Cells) {
     for (let c = 0; c < 80; c++) {
       const [a, b] = [ref[r][c], ours[r][c]];
       if (blank(a) && blank(b)) continue;
-      if (a[0] !== b[0] || a[1] !== b[1]) bad.push(`(${r + 1},${c + 1}) ref ${a[0].toString(16)}/${a[1].toString(16)} ours ${b[0].toString(16)}/${b[1].toString(16)}`);
+      if (a[0] !== b[0] || a[1] !== b[1])
+        bad.push(
+          `(${r + 1},${c + 1}) ref ${a[0].toString(16)}/${a[1].toString(16)} ours ${b[0].toString(16)}/${b[1].toString(16)}`,
+        );
     }
-  if (bad.length) log(`--- ${name}: ${bad.length} cells differ\n${bad.slice(0, 12).join("\n")}\nREF:\n${text(ref)}\nOURS:\n${text(ours)}`);
-  else log(`--- ${name}: identical | ${text(ref).split("\n").map((l) => l.trim()).filter(Boolean).join(" / ").slice(0, 160)}`);
+  if (bad.length)
+    log(
+      `--- ${name}: ${bad.length} cells differ\n${bad.slice(0, 12).join("\n")}\nREF:\n${text(ref)}\nOURS:\n${text(ours)}`,
+    );
+  else
+    log(
+      `--- ${name}: identical | ${text(ref)
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .join(" / ")
+        .slice(0, 160)}`,
+    );
   return bad.length;
 }
 
 function comparePixels(name: string, pc: ReturnType<typeof makePC>) {
   const raw = new Uint8Array(640 * 480 * 3);
-  pc.video.pixels.forEach((p, i) => raw.set(PALETTE[p], i * 3));
+  pc.video.pixels.forEach((p, i) => {
+    raw.set(PALETTE[p], i * 3);
+  });
   const label = name.replace(/\W+/g, "_");
   const file = join(tmpdir(), `manifest-${label}.rgb`);
   writeFileSync(file, raw);
-  const out = execFileSync("python", [GRAB!, file, label], { encoding: "utf8" }).trim();
+  const out = execFileSync("python", [GRAB ?? "", file, label], { encoding: "utf8" }).trim();
   const bad = parseInt(out, 10);
   log(`--- ${name}: ${bad ? `${out} pixels differ` : "pixel-identical"}`);
   return bad;
@@ -258,7 +285,8 @@ async function locateSeed(candidates: number[]) {
   for (const s0 of candidates) {
     const s7 = advance(s0, 7);
     for (let i = 0; i + 2 < ram.length; i++) {
-      if (ram[i] === (s7 & 0xff) && ram[i + 1] === ((s7 >> 8) & 0xff) && ram[i + 2] === s7 >> 16) return { s0, addr: i };
+      if (ram[i] === (s7 & 0xff) && ram[i + 1] === ((s7 >> 8) & 0xff) && ram[i + 2] === s7 >> 16)
+        return { s0, addr: i };
     }
   }
   throw new Error("RND seed not found in memory");
@@ -326,7 +354,9 @@ it("matches the original screen for screen", async () => {
     await refSettle();
     const lines = text(await refCells()).split("\n");
     const num = (row: number, col: number) => parseInt(lines[row - 1].slice(col - 1 + 15).trim(), 10);
-    const { s0, addr } = await locateSeed(seedsFor([num(11, 21), num(12, 21), num(13, 21), num(11, 42), num(12, 42), num(13, 42)]));
+    const { s0, addr } = await locateSeed(
+      seedsFor([num(11, 21), num(12, 21), num(13, 21), num(11, 42), num(12, 42), num(13, 42)]),
+    );
     seedAddr = addr;
     pc.rng.seed = s0;
     await type(pc, "2\r");
@@ -340,14 +370,15 @@ it("matches the original screen for screen", async () => {
     // Walk a route; in battle attack, take any loot, go down stairs, and press Space through
     // everything else. Keys are chosen from the original's screen so both games get the same.
     const route = "8888666888848888222288886888";
-    const respond = (screen: string) => (/\(A\)ttack/.test(screen) ? "a" : /\(y\/n\)/.test(screen) ? "y" : " ");
+    const respond = (screen: string) => (screen.includes("(A)ttack") ? "a" : screen.includes("(y/n)") ? "y" : " ");
     for (let i = 0; i < Number(process.env.TURNS ?? 60); i++) {
       const k = (await refMode()) === 3 ? respond(text(await refCells())) : route[i % route.length];
       await step(`turn ${i + 1} (${k === " " ? "space" : k})`, k, 2500);
     }
 
     // Get back to the maze, then go through the menus and dialogs.
-    for (let i = 0; i < 40 && (await refMode()) === 3; i++) await step(`finish ${i + 1}`, respond(text(await refCells())), 2500);
+    for (let i = 0; i < 40 && (await refMode()) === 3; i++)
+      await step(`finish ${i + 1}`, respond(text(await refCells())), 2500);
     const tour: Array<[string, string]> = [
       ["commands menu", "c"],
       ["hints menu", "h"],
@@ -391,7 +422,7 @@ it("shows the same QuickBASIC error screen", async () => {
     const pc = matchingPC();
     const source = decodeCP437(new Uint8Array(readFileSync(resolve(__dirname, "../../original/M.BAS"))));
     let shown: Promise<void> | undefined;
-    void runManifest(pc).catch((e) => {
+    void runManifest(pc).catch((e: unknown) => {
       if (e instanceof QBError) shown = showErrorScreen(pc, e, source);
     });
     await refWaitFor(/Version 2\.01 1994/); // QuickBASIC takes a while to load M.BAS
@@ -416,8 +447,44 @@ it("walks level 4 to the exit the same way", async () => {
   // matched ENDGAME.BAS's. Ours goes on to the final battle instead (see the
   // ENDGAME.BAS scenario below), so the comparison ends there.
   const fields = [
-    100, 75, 70, 23, 0, 26, 17, 25, 110, "", 999, 9, 4, 0, 0, "Hawke", "", "Lorac", 400, 9999, 50, 40000,
-    9999, 37, 21, "A Fighter", 999, 50, 300, 9999, 9999, 1, 1, 1, 1, 1, 1, 1,
+    100,
+    75,
+    70,
+    23,
+    0,
+    26,
+    17,
+    25,
+    110,
+    "",
+    999,
+    9,
+    4,
+    0,
+    0,
+    "Hawke",
+    "",
+    "Lorac",
+    400,
+    9999,
+    50,
+    40000,
+    9999,
+    37,
+    21,
+    "A Fighter",
+    999,
+    50,
+    300,
+    9999,
+    9999,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
   ];
   const save = fields.map((v) => (typeof v === "number" ? ` ${v} ` : v)).join("\r\n") + "\r\n";
   const dosbox = await startDosbox(save);
@@ -440,7 +507,8 @@ it("walks level 4 to the exit the same way", async () => {
         }
       }
       const mode = await refMode();
-      if (/Type mismatch/.test(text(await refCells()))) log(`--- ${name}: the original stops with Type mismatch here`);
+      if (text(await refCells()).includes("Type mismatch"))
+        log(`--- ${name}: the original stops with Type mismatch here`);
       else if (mode === 3 && pc.video.mode === 0) failures += diff(name, await refCells(), screenCells(pc)) ? 1 : 0;
       else if (GRAB && mode === 0x12 && pc.video.mode === 12) failures += comparePixels(name, pc) ? 1 : 0;
       else if ((mode === 3) !== (pc.video.mode === 0)) {
@@ -459,8 +527,8 @@ it("walks level 4 to the exit the same way", async () => {
     // Walk north (the first move after a restore goes nowhere - see Game.step), fighting as needed.
     for (let i = 0; i < Number(process.env.TURNS ?? 80); i++) {
       const screen = text(await refCells());
-      if (/Type mismatch/.test(screen)) break;
-      const k = /\(A\)ttack/.test(screen) ? "a" : (await refMode()) === 3 ? " " : "8";
+      if (screen.includes("Type mismatch")) break;
+      const k = screen.includes("(A)ttack") ? "a" : (await refMode()) === 3 ? " " : "8";
       await step(`level 4, step ${i + 1} (${k === " " ? "space" : k})`, k);
     }
     expect(text(await refCells())).toContain("Type mismatch");
@@ -474,20 +542,73 @@ it("plays ENDGAME.BAS the same way", async () => {
   // Run the final battle on its own, handing it a party through CHECK.TMP the
   // way M.BAS does. A fresh QuickBASIC run starts RND at seed 5, as ours does.
   const party = {
-    level: 9, heroDefense: 100, companionOffense: 75, companionDefense: 70, heroArmor: 23, heroWeapon: 26,
-    companionArmor: 17, companionWeapon: 25, heroOffense: 110, companionMp: 999, name: "Hawke", fallen: "",
-    companion: "Lorac", attack: 400, hp: 9999, mp: 50, xp: 40000, hpMax: 9999, companionMpMax: 999, mpMax: 50,
-    companionAttack: 300, companionHp: 9999, companionHpMax: 9999,
+    level: 9,
+    heroDefense: 100,
+    companionOffense: 75,
+    companionDefense: 70,
+    heroArmor: 23,
+    heroWeapon: 26,
+    companionArmor: 17,
+    companionWeapon: 25,
+    heroOffense: 110,
+    companionMp: 999,
+    name: "Hawke",
+    fallen: "",
+    companion: "Lorac",
+    attack: 400,
+    hp: 9999,
+    mp: 50,
+    xp: 40000,
+    hpMax: 9999,
+    companionMpMax: 999,
+    mpMax: 50,
+    companionAttack: 300,
+    companionHp: 9999,
+    companionHpMax: 9999,
   };
   const p = party;
-  const check = ["CHECK", p.level, p.heroDefense, p.companionOffense, p.companionDefense, p.heroArmor, p.heroWeapon,
-    p.companionArmor, p.companionWeapon, p.heroOffense, p.companionMp, p.name, p.fallen, p.companion, p.attack, p.hp,
-    p.mp, p.xp, p.hpMax, p.companionMpMax, p.mpMax, p.companionAttack, p.companionHp, p.companionHpMax, 1, 1, 1, 1, 1, 1, 1]
-    .map((v) => (typeof v === "number" ? ` ${v} ` : v)).join("\r\n") + "\r\n";
+  const check =
+    [
+      "CHECK",
+      p.level,
+      p.heroDefense,
+      p.companionOffense,
+      p.companionDefense,
+      p.heroArmor,
+      p.heroWeapon,
+      p.companionArmor,
+      p.companionWeapon,
+      p.heroOffense,
+      p.companionMp,
+      p.name,
+      p.fallen,
+      p.companion,
+      p.attack,
+      p.hp,
+      p.mp,
+      p.xp,
+      p.hpMax,
+      p.companionMpMax,
+      p.mpMax,
+      p.companionAttack,
+      p.companionHp,
+      p.companionHpMax,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+    ]
+      .map((v) => (typeof v === "number" ? ` ${v} ` : v))
+      .join("\r\n") + "\r\n";
 
   freshInstall();
   writeFileSync(join(GAME_DIR, "CHECK.TMP"), check, "latin1");
-  const proc = spawn(EXE, ["--noprimaryconf", "--nolocalconf", "--conf", process.env.ENDGAME_CONF!], { stdio: "ignore" });
+  const proc = spawn(EXE, ["--noprimaryconf", "--nolocalconf", "--conf", process.env.ENDGAME_CONF ?? ""], {
+    stdio: "ignore",
+  });
   try {
     for (let i = 0; ; i++) {
       try {
@@ -500,11 +621,35 @@ it("plays ENDGAME.BAS the same way", async () => {
     }
     const pc = matchingPC();
     const g = new Game(pc, loadGameData(pc));
-    Object.assign(g, { level: p.level, xp: p.xp, fallen: p.fallen, heroDefense: p.heroDefense, heroOffense: p.heroOffense,
-      companionDefense: p.companionDefense, companionOffense: p.companionOffense });
-    Object.assign(g.hero, { name: p.name, attack: p.attack, hp: p.hp, hpMax: p.hpMax, mp: p.mp, mpMax: p.mpMax, armor: p.heroArmor, weapon: p.heroWeapon });
-    Object.assign(g.companion, { name: p.companion, attack: p.companionAttack, hp: p.companionHp, hpMax: p.companionHpMax,
-      mp: p.companionMp, mpMax: p.companionMpMax, armor: p.companionArmor, weapon: p.companionWeapon });
+    Object.assign(g, {
+      level: p.level,
+      xp: p.xp,
+      fallen: p.fallen,
+      heroDefense: p.heroDefense,
+      heroOffense: p.heroOffense,
+      companionDefense: p.companionDefense,
+      companionOffense: p.companionOffense,
+    });
+    Object.assign(g.hero, {
+      name: p.name,
+      attack: p.attack,
+      hp: p.hp,
+      hpMax: p.hpMax,
+      mp: p.mp,
+      mpMax: p.mpMax,
+      armor: p.heroArmor,
+      weapon: p.heroWeapon,
+    });
+    Object.assign(g.companion, {
+      name: p.companion,
+      attack: p.companionAttack,
+      hp: p.companionHp,
+      hpMax: p.companionHpMax,
+      mp: p.companionMp,
+      mpMax: p.companionMpMax,
+      armor: p.companionArmor,
+      weapon: p.companionWeapon,
+    });
     for (const c of Object.keys(g.potions) as Array<keyof typeof g.potions>) g.potions[c] = 1;
     runOurs(pc, () => endgame(g));
 
@@ -514,12 +659,12 @@ it("plays ENDGAME.BAS the same way", async () => {
     failures += diff("Beldan's lair", await refCells(), screenCells(pc)) ? 1 : 0;
     for (let i = 0; i < Number(process.env.TURNS ?? 120); i++) {
       const screen = text(await refCells());
-      if (/Program not running/.test(screen)) break;
-      if (/Press any key to continue/.test(screen)) {
+      if (screen.includes("Program not running")) break;
+      if (screen.includes("Press any key to continue")) {
         failures += diff("program ended", await refCells(), screenCells(pc)) ? 1 : 0;
         break;
       }
-      const k = /\(A\)ttack/.test(screen) ? "a" : " ";
+      const k = screen.includes("(A)ttack") ? "a" : " ";
       await refType(k);
       await type(pc, k);
       await refSettle(2500);
@@ -535,8 +680,44 @@ it("plays ENDGAME.BAS the same way", async () => {
 it("handles magic, potions and death the same way", async () => {
   // A level-3 magic user with potions and plenty of magic, at the start of level 1.
   const fields = [
-    10, 5, 5, 4, 0, 6, 5, 9, 2, "", 60, 3, 1, 0, 0, "Hawke", "", "Lorac", 60, 150, 600, 2000,
-    150, 11, 11, "A Magic User", 60, 600, 80, 120, 120, 2, 2, 2, 2, 2, 2, 2,
+    10,
+    5,
+    5,
+    4,
+    0,
+    6,
+    5,
+    9,
+    2,
+    "",
+    60,
+    3,
+    1,
+    0,
+    0,
+    "Hawke",
+    "",
+    "Lorac",
+    60,
+    150,
+    600,
+    2000,
+    150,
+    11,
+    11,
+    "A Magic User",
+    60,
+    600,
+    80,
+    120,
+    120,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
+    2,
   ];
   const save = fields.map((v) => (typeof v === "number" ? ` ${v} ` : v)).join("\r\n") + "\r\n";
   const dosbox = await startDosbox(save);
@@ -578,27 +759,29 @@ it("handles magic, potions and death the same way", async () => {
     // casting and drinking; in the maze, walk and now and then cast a field spell.
     const fieldSpells = ["1\r", "4\r", "3\r", "2\r", "5\r"];
     const potions = ["white\r", "blue\r", "grey\r", "yellow\r", "red\r", "purple\r", "green\r"];
-    let fight = 0, cast = 0, drink = 0;
+    let fight = 0,
+      cast = 0,
+      drink = 0;
     for (let i = 0; i < Number(process.env.TURNS ?? 90); i++) {
       const screen = text(await refCells());
       // The game is over, or stopped on a QuickBASIC error (already compared). From the
       // error, the original drops into the editor and ours restarts, so stop here.
-      if (/Press any key to continue|File  Edit  View/.test(screen)) break;
+      if (/Press any key to continue|File {2}Edit {2}View/.test(screen)) break;
       const [row, col] = await refCursor();
       const prompt = (screen.split("\n")[row - 1] ?? "").slice(0, col - 1).trimEnd();
       let k: string;
       if (/\(y\/n\)\??$/.test(prompt)) k = "y";
-      else if (/What spell\? \(1-15\)/.test(screen) && row >= 15 && row <= 16) k = ["3\r", "1\r", "9\r"][cast++ % 3];
-      else if (/What spell\?$/.test(prompt)) k = fieldSpells[cast++ % fieldSpells.length];
-      else if (/Heal Who\?/.test(prompt)) k = "1\r";
+      else if (screen.includes("What spell? (1-15)") && row >= 15 && row <= 16) k = ["3\r", "1\r", "9\r"][cast++ % 3];
+      else if (prompt.endsWith("What spell?")) k = fieldSpells[cast++ % fieldSpells.length];
+      else if (prompt.includes("Heal Who?")) k = "1\r";
       // (Asking for more than is missing loops forever, in both versions.)
-      else if (/How many hit points\?$/.test(prompt)) k = /only needs? +0 *$/m.test(screen) ? "0\r" : "10\r";
-      else if (/Which spell\?$/.test(prompt)) k = "1\r";
-      else if (/What Spell \?$/.test(prompt)) k = "2\r";
+      else if (prompt.endsWith("How many hit points?")) k = /only needs? +0 *$/m.test(screen) ? "0\r" : "10\r";
+      else if (prompt.endsWith("Which spell?")) k = "1\r";
+      else if (prompt.endsWith("What Spell ?")) k = "2\r";
       else if (/Down\?$|Across\?$/.test(prompt)) k = "15\r";
-      else if (/drink\?$/.test(prompt)) k = potions[drink++ % potions.length];
-      else if (/Who\? 1\) You/.test(screen) && /2\)/.test(screen) && !/\(A\)ttack/.test(screen)) k = "1";
-      else if (/\(A\)ttack/.test(screen)) k = "amd"[fight++ % 3];
+      else if (prompt.endsWith("drink?")) k = potions[drink++ % potions.length];
+      else if (screen.includes("Who? 1) You") && screen.includes("2)") && !screen.includes("(A)ttack")) k = "1";
+      else if (screen.includes("(A)ttack")) k = "amd"[fight++ % 3];
       else if ((await refMode()) === 0x12) k = i % 5 === 4 ? "m" : "8642"[i % 4];
       else k = " ";
       await step(`step ${i + 1} (${JSON.stringify(k)})`, k);

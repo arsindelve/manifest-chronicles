@@ -18,7 +18,10 @@ export class Clock {
   /** 1 = real time; 0 skips delays entirely (headless tests). */
   timeScale = 1;
 
-  constructor(private keyboard: Keyboard, private speaker: Speaker) {}
+  constructor(
+    private keyboard: Keyboard,
+    private speaker: Speaker,
+  ) {}
 
   async wait(ms: number) {
     ms *= this.timeScale;

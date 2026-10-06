@@ -15,6 +15,8 @@ const MENU: Array<[PotionColor, string, number]> = [
   ["green", " Green x ", 10],
 ];
 
+const ATTRIBUTE = Object.fromEntries(MENU.map(([color, , attr]) => [color, attr])) as Record<PotionColor, number>;
+
 /** Healing potions restore this share of the missing health. */
 const HEALING: Partial<Record<PotionColor, number>> = { white: 0.15, grey: 0.25, purple: 0.5 };
 
@@ -59,7 +61,7 @@ async function drink(g: Game, color: PotionColor, rules: PotionRules) {
     return;
   }
   g.potions[color]--;
-  s.color(MENU.find(([c]) => c === color)![2]);
+  s.color(ATTRIBUTE[color]);
 
   // Who drinks it? Asked only while both are alive - except for green, which always asks.
   const askWho = async () => {
@@ -113,13 +115,24 @@ async function drink(g: Game, color: PotionColor, rules: PotionRules) {
 export async function potionDrops(g: Game, monster: string) {
   const s = g.screen;
   const odds: Array<[PotionColor, number]> = [
-    ["green", 100], ["red", 30], ["yellow", 25], ["blue", 30], ["purple", 20], ["grey", 10], ["white", 5],
+    ["green", 100],
+    ["red", 30],
+    ["yellow", 25],
+    ["blue", 30],
+    ["purple", 20],
+    ["grey", 10],
+    ["white", 5],
   ];
   const dropped = new Set(odds.filter(([, n]) => g.rng.roll(n) === 1).map(([c]) => c));
   // [colour, attribute, potions gained, message width used for centring - grey's is one short]
   const shown: Array<[PotionColor, number, number, number]> = [
-    ["green", 10, 1, 23], ["red", 4, 1, 21], ["yellow", 14, 1, 24], ["blue", 9, 1, 22],
-    ["white", 15, 2, 23], ["grey", 8, 1, 21], ["purple", 13, 1, 24],
+    ["green", 10, 1, 23],
+    ["red", 4, 1, 21],
+    ["yellow", 14, 1, 24],
+    ["blue", 9, 1, 22],
+    ["white", 15, 2, 23],
+    ["grey", 8, 1, 21],
+    ["purple", 13, 1, 24],
   ];
   for (const [color, attr, count, width] of shown) {
     if (!dropped.has(color)) continue;
@@ -144,11 +157,23 @@ export async function openChest(g: Game) {
   s.writeln();
 
   const odds: Array<[PotionColor, number]> = [
-    ["green", 3], ["red", 2], ["yellow", 2], ["blue", 2], ["purple", 2], ["grey", 2], ["white", 2],
+    ["green", 3],
+    ["red", 2],
+    ["yellow", 2],
+    ["blue", 2],
+    ["purple", 2],
+    ["grey", 2],
+    ["white", 2],
   ];
   const found = new Set(odds.filter(([, n]) => g.rng.roll(n) === 1).map(([c]) => c));
   const shown: Array<[PotionColor, number]> = [
-    ["green", 2], ["red", 4], ["yellow", 14], ["blue", 9], ["white", 15], ["grey", 8], ["purple", 13],
+    ["green", 2],
+    ["red", 4],
+    ["yellow", 14],
+    ["blue", 9],
+    ["white", 15],
+    ["grey", 8],
+    ["purple", 13],
   ];
   for (const [color, attr] of shown) {
     if (!found.has(color)) continue;
@@ -185,7 +210,12 @@ export async function openChest(g: Game) {
     const k = await g.pc.keyboard.waitFor("y", "n");
     if (k.toLowerCase() === "y" && (role === "f" || role === "m")) equip(g.wearer(role));
   };
-  const a = g.data.armor[armor], w = g.data.weapons[weapon];
+  const a = g.data.armor[armor],
+    w = g.data.weapons[weapon];
   await offer(`The chest contains ${a.name}. Want it? (y/n) `, a.role, (c) => (c.armor = armor));
-  await offer(`The chest contains ${weapon === 26 ? "" : "a "}${w.name}. Want it? (y/n)? `, w.role, (c) => (c.weapon = weapon));
+  await offer(
+    `The chest contains ${weapon === 26 ? "" : "a "}${w.name}. Want it? (y/n)? `,
+    w.role,
+    (c) => (c.weapon = weapon),
+  );
 }

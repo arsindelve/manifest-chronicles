@@ -14,7 +14,11 @@ export async function pressAnyKey(pc: PC) {
   await pc.keyboard.waitKey();
 }
 
-const NORMAL = 0x07, INVERSE = 0x70, MENU = 0x30, HOTKEY = 0x34, STATUS_HI = 0x3f;
+const NORMAL = 0x07,
+  INVERSE = 0x70,
+  MENU = 0x30,
+  HOTKEY = 0x34,
+  STATUS_HI = 0x3f;
 
 export async function showErrorScreen(pc: PC, err: QBError, source: string) {
   const v = pc.video;
@@ -59,7 +63,7 @@ export async function showErrorScreen(pc: PC, err: QBError, source: string) {
     put(row, 80, row === 3 ? "\x18" : row === 20 ? "\x19" : "▒", INVERSE);
     if (n === errorLine) {
       const indent = text.length - text.trimStart().length;
-      const token = text.trimStart().match(/^[^\s(]+/)?.[0] ?? "";
+      const token = /^[^\s(]+/.exec(text.trimStart())?.[0] ?? "";
       paint(row, 2 + indent, 1 + indent + token.length, INVERSE);
     }
   }
@@ -88,9 +92,20 @@ export async function showErrorScreen(pc: PC, err: QBError, source: string) {
     const l = Math.floor((inner - s.length) / 2);
     return "│" + " ".repeat(l) + s + " ".repeat(inner - l - s.length) + "│";
   };
-  const box = ["┌" + "─".repeat(inner) + "┐", pad(""), pad(err.message), pad(""), pad("╔════╗"), pad("║ OK ║"), pad("╚════╝"), "└" + "─".repeat(inner) + "┘"];
+  const box = [
+    "┌" + "─".repeat(inner) + "┐",
+    pad(""),
+    pad(err.message),
+    pad(""),
+    pad("╔════╗"),
+    pad("║ OK ║"),
+    pad("╚════╝"),
+    "└" + "─".repeat(inner) + "┘",
+  ];
   const boxTop = errorRow >= 9 && errorRow <= 16 ? 17 : 9;
-  box.forEach((text, i) => put(boxTop + i, left, text, INVERSE));
+  box.forEach((text, i) => {
+    put(boxTop + i, left, text, INVERSE);
+  });
 
   v.cursorVisible = false;
   await pc.keyboard.waitKey();
@@ -104,7 +119,7 @@ function locate(lines: string[], line?: number) {
   for (let i = line; i >= 1; i--) {
     const t = lines[i - 1]?.trim() ?? "";
     if (/^END SUB\b/i.test(t) && i < line) break;
-    const m = t.match(/^SUB\s+(\w+)/i);
+    const m = /^SUB\s+(\w+)/i.exec(t);
     if (m) {
       let end = i;
       while (end < lines.length && !/^END SUB\b/i.test(lines[end - 1].trim())) end++;

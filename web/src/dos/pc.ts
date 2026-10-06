@@ -21,7 +21,10 @@ export class PC {
   currentDir = "C:\\SKULE\\QUICKBAS";
   bytesFree = 31424512;
 
-  constructor(font: Uint8Array, readonly disk: Disk) {
+  constructor(
+    font: Uint8Array,
+    readonly disk: Disk,
+  ) {
     this.video = new Video(font);
     this.screen = new Terminal(this.video, this.keyboard);
     this.clock = new Clock(this.keyboard, this.speaker);

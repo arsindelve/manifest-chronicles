@@ -5,6 +5,7 @@
 // RGB with the default VGA palette, so the canvas holds exactly the pixels a
 // VGA card would put on screen.
 
+// prettier-ignore
 export const PALETTE: ReadonlyArray<readonly [number, number, number]> = [
   [0x00, 0x00, 0x00], [0x00, 0x00, 0xaa], [0x00, 0xaa, 0x00], [0x00, 0xaa, 0xaa],
   [0xaa, 0x00, 0x00], [0xaa, 0x00, 0xaa], [0xaa, 0x55, 0x00], [0xaa, 0xaa, 0xaa],
@@ -31,8 +32,12 @@ export class Video {
     this.clear();
   }
 
-  get width() { return this.mode === 0 ? 720 : 640; }
-  get height() { return this.mode === 0 ? 400 : 480; }
+  get width() {
+    return this.mode === 0 ? 720 : 640;
+  }
+  get height() {
+    return this.mode === 0 ? 400 : 480;
+  }
 
   setMode(mode: Mode) {
     this.mode = mode;
@@ -80,8 +85,10 @@ export class Video {
 
   /** LINE (x1,y1)-(x2,y2),c,BF */
   box(x1: number, y1: number, x2: number, y2: number, c: number) {
-    const xa = Math.max(0, Math.min(x1, x2)), xb = Math.min(639, Math.max(x1, x2));
-    const ya = Math.max(0, Math.min(y1, y2)), yb = Math.min(479, Math.max(y1, y2));
+    const xa = Math.max(0, Math.min(x1, x2)),
+      xb = Math.min(639, Math.max(x1, x2));
+    const ya = Math.max(0, Math.min(y1, y2)),
+      yb = Math.min(479, Math.max(y1, y2));
     for (let y = ya; y <= yb; y++) this.pixels.fill(c, y * 640 + xa, y * 640 + xb + 1);
     this.dirty = true;
   }
@@ -95,18 +102,25 @@ export class Video {
    */
   line(x1: number, y1: number, x2: number, y2: number, c: number) {
     if (x1 > x2) [x1, y1, x2, y2] = [x2, y2, x1, y1];
-    const dx = x2 - x1, dy = Math.abs(y2 - y1), sy = y2 >= y1 ? 1 : -1;
+    const dx = x2 - x1,
+      dy = Math.abs(y2 - y1),
+      sy = y2 >= y1 ? 1 : -1;
     const xMajor = dx >= dy;
-    const major = xMajor ? dx : dy, minor = xMajor ? dy : dx;
-    let e = Math.ceil(major / 4), x = x1, y = y1;
+    const major = xMajor ? dx : dy,
+      minor = xMajor ? dy : dx;
+    let e = Math.ceil(major / 4),
+      x = x1,
+      y = y1;
     for (let i = 0; i <= major; i++) {
       this.pset(x, y, c);
       e -= minor;
       if (e <= 0) {
         e += major;
-        if (xMajor) y += sy; else x += 1;
+        if (xMajor) y += sy;
+        else x += 1;
       }
-      if (xMajor) x += 1; else y += sy;
+      if (xMajor) x += 1;
+      else y += sy;
     }
     this.dirty = true;
   }
@@ -117,15 +131,20 @@ export class Video {
     if (this.mode === 12) {
       for (let i = 0, p = 0; i < 640 * 480; i++, p += 4) {
         const c = PALETTE[this.pixels[i]];
-        d[p] = c[0]; d[p + 1] = c[1]; d[p + 2] = c[2]; d[p + 3] = 255;
+        d[p] = c[0];
+        d[p + 1] = c[1];
+        d[p + 2] = c[2];
+        d[p + 3] = 255;
       }
       return;
     }
     for (let row = 0; row < 25; row++) {
       for (let col = 0; col < 80; col++) {
         const cell = this.text[row * 80 + col];
-        const ch = cell & 0xff, attr = cell >> 8;
-        const fg = PALETTE[attr & 0x0f], bg = PALETTE[(attr >> 4) & 0x07];
+        const ch = cell & 0xff,
+          attr = cell >> 8;
+        const fg = PALETTE[attr & 0x0f],
+          bg = PALETTE[(attr >> 4) & 0x07];
         // VGA line-graphics: characters C0-DF repeat their 8th column in the 9th.
         const lineGraphic = ch >= 0xc0 && ch <= 0xdf;
         const isCursor = blinkOn && this.cursorVisible && row === this.cursorRow - 1 && col === this.cursorCol - 1;
@@ -137,7 +156,10 @@ export class Video {
           for (let x = 0; x < 9; x++, p += 4) {
             const on = x < 8 ? bits & (0x80 >> x) : ninth;
             const c = on ? fg : bg;
-            d[p] = c[0]; d[p + 1] = c[1]; d[p + 2] = c[2]; d[p + 3] = 255;
+            d[p] = c[0];
+            d[p + 1] = c[1];
+            d[p + 2] = c[2];
+            d[p + 3] = 255;
           }
         }
       }
