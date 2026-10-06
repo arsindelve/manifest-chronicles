@@ -3,17 +3,16 @@
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { DATA_FILES } from "../src/datafiles";
+import { DATA_FILES, dataFolder } from "../src/datafiles";
 import { CP437, decodeCP437 } from "../src/dos/cp437";
 import { Disk } from "../src/dos/disk";
 import { PC } from "../src/dos/pc";
 
-const ROOT = resolve(__dirname, "../../original");
-
 export function makePC(extraFiles: Record<string, string> = {}) {
   const font = new Uint8Array(readFileSync(resolve(__dirname, "../public/vga8x16.bin")));
   const texts: Record<string, string> = {};
-  for (const name of DATA_FILES) texts[name] = decodeCP437(new Uint8Array(readFileSync(resolve(ROOT, name))));
+  for (const name of DATA_FILES)
+    texts[name] = decodeCP437(new Uint8Array(readFileSync(resolve(__dirname, "..", dataFolder(name), name))));
   const pc = new PC(font, new Disk({ ...texts, ...extraFiles }));
   pc.clock.timeScale = 0;
   return pc;

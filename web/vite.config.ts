@@ -1,12 +1,11 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig, type Plugin } from "vite";
-import { DATA_FILES } from "./src/datafiles.ts";
+import { DATA_FILES, dataFolder } from "./src/datafiles.ts";
 
-// The game's original data files live in ../original, next to M.BAS.
-// Serve them at /data/ in dev and copy them into dist/data/ on build,
-// byte-for-byte, so the web version reads exactly what QuickBASIC read.
-const ROOT = resolve(import.meta.dirname, "../original");
+// Serve the game's data files at /data/ in dev and copy them into dist/data/
+// on build, byte for byte.
+const pathOf = (name: string) => resolve(import.meta.dirname, dataFolder(name), name);
 
 function gameData(): Plugin {
   return {
@@ -20,12 +19,12 @@ function gameData(): Plugin {
           return;
         }
         res.setHeader("Content-Type", "application/octet-stream");
-        res.end(readFileSync(resolve(ROOT, name)));
+        res.end(readFileSync(pathOf(name)));
       });
     },
     generateBundle() {
       for (const name of DATA_FILES) {
-        this.emitFile({ type: "asset", fileName: `data/${name}`, source: readFileSync(resolve(ROOT, name)) });
+        this.emitFile({ type: "asset", fileName: `data/${name}`, source: readFileSync(pathOf(name)) });
       }
     },
   };

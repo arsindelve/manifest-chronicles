@@ -1,4 +1,6 @@
-// Every file the game opens, as named on disk in original/.
+// Every file the game opens. The game's data lives in web/data/: copies of the
+// 1995 files in original/, with their typos fixed. M.BAS is read from
+// original/ itself.
 export const DATA_FILES = [
   "MAP.1",
   "MAP.2",
@@ -28,3 +30,8 @@ export const DATA_FILES = [
   // Not read by the game; shown on the QuickBASIC error screen.
   "M.BAS",
 ];
+
+/** The folder, relative to web/, that holds a data file. */
+export function dataFolder(name: string) {
+  return name === "M.BAS" ? "../original" : "data";
+}
