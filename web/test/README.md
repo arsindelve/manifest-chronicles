@@ -46,7 +46,7 @@ There are five scenarios:
 1. Install DOSBox Staging (0.83 or later; the REST API is needed).
 2. Make a folder with two subfolders:
    - `QB\`: QuickBASIC 4.0 (`QB.EXE` and its files)
-   - `GAME\`: `M.BAS`, `ENDGAME.BAS` and the data files from the repo root
+   - `GAME\`: `M.BAS`, `ENDGAME.BAS` and the data files from `original/`
 3. Copy `dosbox/compare.conf.template` to `compare.conf`, and replace `@DOS@` with
    the folder from step 2. Make an `endgame.conf` copy that runs `ENDGAME.BAS`.
 4. For pixel comparison, install Python with Pillow. The capture uses Windows'

@@ -8,7 +8,7 @@ import { CP437, decodeCP437 } from "../src/dos/cp437";
 import { Disk } from "../src/dos/disk";
 import { PC } from "../src/dos/pc";
 
-const ROOT = resolve(__dirname, "../..");
+const ROOT = resolve(__dirname, "../../original");
 
 export function makePC(extraFiles: Record<string, string> = {}) {
   const font = new Uint8Array(readFileSync(resolve(__dirname, "../public/vga8x16.bin")));

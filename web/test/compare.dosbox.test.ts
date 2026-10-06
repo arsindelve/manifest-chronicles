@@ -130,7 +130,7 @@ async function refWaitFor(pattern: RegExp, max = 120000) {
 /** Put the reference's folder back to a fresh install: no saves, an empty score table. */
 function freshInstall() {
   for (const f of readdirSync(GAME_DIR)) if (/\.(SAV|TMP)$/i.test(f)) rmSync(join(GAME_DIR, f));
-  copyFileSync(resolve(__dirname, "../../HIGH.DAT"), join(GAME_DIR, "HIGH.DAT"));
+  copyFileSync(resolve(__dirname, "../../original/HIGH.DAT"), join(GAME_DIR, "HIGH.DAT"));
 }
 
 async function startDosbox(save?: string) {
@@ -159,7 +159,7 @@ function matchingPC(files: Record<string, string> = {}) {
 
 /** Run a program on our PC and, when it stops, show what the page shows. */
 function runOurs(pc: PC, program: (pc: PC) => Promise<unknown>) {
-  const source = decodeCP437(new Uint8Array(readFileSync(resolve(__dirname, "../../M.BAS"))));
+  const source = decodeCP437(new Uint8Array(readFileSync(resolve(__dirname, "../../original/M.BAS"))));
   void program(pc).catch((e) => {
     if (e instanceof ProgramEnded) return pressAnyKey(pc);
     if (e instanceof QBError) return showErrorScreen(pc, e, source);
@@ -389,7 +389,7 @@ it("shows the same QuickBASIC error screen", async () => {
   const dosbox = await startDosbox();
   try {
     const pc = matchingPC();
-    const source = decodeCP437(new Uint8Array(readFileSync(resolve(__dirname, "../../M.BAS"))));
+    const source = decodeCP437(new Uint8Array(readFileSync(resolve(__dirname, "../../original/M.BAS"))));
     let shown: Promise<void> | undefined;
     void runManifest(pc).catch((e) => {
       if (e instanceof QBError) shown = showErrorScreen(pc, e, source);

@@ -14,7 +14,7 @@ npm run build    # static site in dist/
 ```
 
 The game reads its original data files (maps, monsters, spells, story text)
-straight from the repo root, unchanged. The build copies them into `dist/data/`.
+straight from [`original/`](../original), unchanged. The build copies them into `dist/data/`.
 
 ## How it's put together
 

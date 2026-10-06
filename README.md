@@ -128,11 +128,11 @@ Use the **numeric keypad** with **Num Lock on**. The game makes a point of telli
 ## Running the original
 
 - **In a browser:** [the web version](https://arsindelve.github.io/manifest-chronicles/).
-- **In DOSBox, as it ran in 1995:** mount the repo folder in [DOSBox](https://www.dosbox-staging.org/)
+- **In DOSBox, as it ran in 1995:** mount the `original/` folder in [DOSBox](https://www.dosbox-staging.org/)
   with QuickBASIC 4.0 or 4.5, and run `QB /RUN M.BAS`. It won't compile into an `.EXE` with
   QuickBASIC 4.0 (see the 1995 entry in the timeline), but it runs in the editor. Lower the
   DOSBox `cycles` setting until the story text types out at a readable speed.
-- **In [QB64](https://qb64.com/):** open `M.BAS` and run it from the repo folder. The empty
+- **In [QB64](https://qb64.com/):** open `original/M.BAS` and run it from that folder. The empty
   `FOR` loops the game uses for delays will run far too fast on a modern PC.
 
 ---
@@ -195,7 +195,9 @@ over and over while it waits for you to press a key.
 
 ## What's in this repo
 
-| Path | Contents |
+The original game is in [`original/`](original):
+
+| File | Contents |
 | --- | --- |
 | `M.BAS` | The complete QuickBASIC source (version 2.01, last saved 1995) |
 | `ENDGAME.BAS` | The final battle against Beldan (1992) |
@@ -206,7 +208,9 @@ over and over while it waits for you to press a key.
 | `HIGH.DAT` | High-score table (reset to empty slots; the game needs all ten) |
 | `DRAW.DAT` | Drawing data |
 | `AUTOEXEC.BAT`, `CONFIG.SYS` | The DOS boot setup it ran on: a Sound Blaster VIBRA16, a CD-ROM and a three-way boot menu for XMS, EMS or a "maintenance boot" |
-| `web/` | The browser version, in TypeScript |
+
+The browser version, in TypeScript, is in [`web/`](web). It reads the data files straight from
+`original/`, so there is only one copy of the game's content ([how it works](web/README.md)).
 
 `ENDGAME.BAS`, the hint files and the 1995 versions of the data files came from the QuickBASIC
 working folder the game was written in. Other copies in the archive had been rewritten for the

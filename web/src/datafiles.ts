@@ -1,4 +1,4 @@
-// Every file the game opens, as named on disk in the repo root.
+// Every file the game opens, as named on disk in original/.
 export const DATA_FILES = [
   "MAP.1", "MAP.2", "MAP.3", "MAP.4",
   "MAPTEXT.1", "MAPTEXT.2", "MAPTEXT.3", "MAPTEXT.4",
