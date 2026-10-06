@@ -26,13 +26,14 @@ These dates come from the original files' timestamps.
 | **Feb – Apr 1992** | Levels 2–4 and the story text (`MAPTEXT.3`–`.8`) are written. |
 | **Apr 16 – 22, 1992** | `ENDGAME.EXE` and `MANIFEST.EXE` are compiled. *The Manifest Chronicles* v1 is done. |
 | **1994** | **Version 2.01**, as shown on the title screen. Weapons and armor are rebalanced (`WEAPONS.DAT`/`ARMOR.DAT`, Aug 16, 1994). |
-| **Jul 19, 1995** | **`M.BAS` is last saved. This is the source in this repo.** Monster spells and the first VGA bitmaps and sound effects are added. |
+| **Jul 19, 1995** | **`M.BAS` is last saved. This is the source in this repo.** Monster spells are added, and the first bitmaps and sound effects are made for a Windows version. |
 | **1995 – 1998** | A **Visual Basic remake** (*Manifest* 3.0) with real graphics, WAV sound effects and Windows forms. Its project file was last saved Oct 10, 1998. |
 | **Aug 1997** | Most of the WAV sound effects and backdrops are made. The opening story and the monster table are rewritten. |
-| **Nov 10, 1999** | The last file to change, `1.BMP`. |
+| **Nov 10, 1999** | The last change to any file: a new bitmap for the remake's main screen. |
 
-The BMP, WAV and MIDI files in this repo came from that Visual Basic remake. **The QuickBASIC
-source here doesn't use any of them.** It draws everything with `LINE` and beeps with `SOUND`.
+The QuickBASIC version uses no image or sound files at all. It draws everything with `LINE` and
+beeps with `SOUND`. The bitmaps, WAV sound effects and *Blade Runner* MIDI made for the Visual Basic
+remake aren't in this repo.
 
 ---
 
@@ -185,7 +186,6 @@ and North Garkonens get an even split. Nobody noticed for 30 years.
 | `MONSTERS.DAT`, `MONSPELL.DAT`, `SPELLS.DAT`, `WEAPONS.DAT`, `ARMOR.DAT` | Game data |
 | `HIGH.DAT` | High-score table (reset) |
 | `DRAW.DAT` | Drawing data |
-| `*.BMP`, `*.bmp`, `*.wav`, `Blade Runner.mid` | Art and audio from the 1995–1999 Visual Basic remake |
 | `AUTOEXEC.BAT`, `CONFIG.SYS` | The DOS boot setup it ran on: a Sound Blaster VIBRA16, a CD-ROM and a three-way boot menu for XMS, EMS or a "maintenance boot" |
 
 The original save games and high scores weren't included. Line endings are kept exactly as they
